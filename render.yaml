@@ -1,0 +1,46 @@
+databases:
+  - name: renzo-db
+    plan: basic-256mb
+    # Note: Production Render DB internal name may differ — local dev uses 'renzo'
+    databaseName: renzo
+
+  - name: renzo-staging-db
+    plan: free
+    databaseName: renzo_staging
+
+services:
+  # ── Production ──────────────────────────────────────────
+  - type: web
+    name: renzo
+    runtime: node
+    plan: starter
+    branch: deploy/prod
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: renzo-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECRET
+        generateValue: true
+
+  # ── Staging ─────────────────────────────────────────────
+  - type: web
+    name: renzo-staging
+    runtime: node
+    plan: free
+    branch: deploy/staging
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: renzo-staging-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECRET
+        generateValue: true

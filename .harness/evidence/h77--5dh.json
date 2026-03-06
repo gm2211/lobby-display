@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--5dh",
+  "agent": "unknown",
+  "start_time": "2026-02-27T03:05:28Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:05:31Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:05:31Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:05:31Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:06:07Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:06:07Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 192,
+    "tsx_files": 135,
+    "test_files": 139,
+    "sh_files": 20
+  },
+  "census_after": {
+    "ts_files": 192,
+    "tsx_files": 135,
+    "test_files": 139,
+    "sh_files": 20
+  },
+  "census_delta": {
+    "ts_files": 0,
+    "tsx_files": 0,
+    "test_files": 0,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-27T03:06:07Z"
+}

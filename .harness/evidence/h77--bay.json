@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--bay",
+  "agent": "unknown",
+  "start_time": "2026-02-26T17:26:56Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-26T17:27:00Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-26T17:27:00Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-26T17:27:00Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-26T17:27:00Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-26T17:27:00Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 1115,
+    "tsx_files": 387,
+    "test_files": 558,
+    "sh_files": 121
+  },
+  "census_after": {
+    "ts_files": 1115,
+    "tsx_files": 387,
+    "test_files": 558,
+    "sh_files": 121
+  },
+  "census_delta": {
+    "ts_files": 0,
+    "tsx_files": 0,
+    "test_files": 0,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-26T17:27:03Z"
+}
