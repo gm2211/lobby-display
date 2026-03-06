@@ -1,0 +1,23 @@
+node_modules
+.idea
+.env
+dist
+dist-server
+/generated/prisma
+prisma/test.db*
+.worktrees/
+e2e/playwright-report/
+e2e/test-results/
+e2e/test-results.json
+e2e/spec-eval-results.json
+e2e/spec-eval-scorecard.json
+e2e/e2e/
+e2e/.auth/
+.auth/
+.env.e2e
+build-version.json
+cc-product-spec.zip
+
+# Test harness runtime artifacts
+.harness/
+docs/platform-spec/screenshots/

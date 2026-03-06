@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--daq",
+  "agent": "unknown",
+  "start_time": "2026-02-27T03:04:13Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:04:16Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:04:16Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:04:16Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:04:20Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-27T03:04:20Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 194,
+    "tsx_files": 133,
+    "test_files": 139,
+    "sh_files": 20
+  },
+  "census_after": {
+    "ts_files": 194,
+    "tsx_files": 133,
+    "test_files": 139,
+    "sh_files": 20
+  },
+  "census_delta": {
+    "ts_files": 0,
+    "tsx_files": 0,
+    "test_files": 0,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-27T03:04:22Z"
+}

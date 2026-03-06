@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--kes",
+  "agent": "unknown",
+  "start_time": "2026-02-27T02:02:41Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-27T02:02:41Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-27T02:02:41Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-27T02:02:41Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-27T02:02:41Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-27T02:02:41Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 192,
+    "tsx_files": 79,
+    "test_files": 111,
+    "sh_files": 20
+  },
+  "census_after": {
+    "ts_files": 192,
+    "tsx_files": 79,
+    "test_files": 111,
+    "sh_files": 20
+  },
+  "census_delta": {
+    "ts_files": 0,
+    "tsx_files": 0,
+    "test_files": 0,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-27T02:02:41Z"
+}

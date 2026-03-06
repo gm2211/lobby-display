@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--ckg",
+  "agent": "unknown",
+  "start_time": "2026-02-26T15:35:57Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:35:59Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:35:59Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:35:59Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:35:59Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:35:59Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 905,
+    "tsx_files": 216,
+    "test_files": 343,
+    "sh_files": 134
+  },
+  "census_after": {
+    "ts_files": 905,
+    "tsx_files": 216,
+    "test_files": 343,
+    "sh_files": 134
+  },
+  "census_delta": {
+    "ts_files": 0,
+    "tsx_files": 0,
+    "test_files": 0,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-26T15:36:02Z"
+}

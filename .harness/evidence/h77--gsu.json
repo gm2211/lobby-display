@@ -1,0 +1,46 @@
+{
+  "ticket_id": "h77--gsu",
+  "agent": "unknown",
+  "start_time": "2026-02-26T15:37:19Z",
+  "gates": {
+    "tsc": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:37:21Z"
+    },
+    "build": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:37:21Z"
+    },
+    "vitest": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:37:21Z"
+    },
+    "mutation": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:37:21Z"
+    },
+    "visual": {
+      "result": "pass",
+      "timestamp": "2026-02-26T15:37:21Z"
+    }
+  },
+  "census_before": {
+    "ts_files": 910,
+    "tsx_files": 216,
+    "test_files": 346,
+    "sh_files": 134
+  },
+  "census_after": {
+    "ts_files": 912,
+    "tsx_files": 216,
+    "test_files": 347,
+    "sh_files": 134
+  },
+  "census_delta": {
+    "ts_files": 2,
+    "tsx_files": 0,
+    "test_files": 1,
+    "sh_files": 0
+  },
+  "end_time": "2026-02-26T15:37:24Z"
+}

@@ -1,0 +1,270 @@
+{
+  "timestamp": "2026-02-26T05:45:27Z",
+  "totals": {
+    "files": 32,
+    "describes": 55,
+    "tests": 211,
+    "assertions": 535,
+    "skipped": 1,
+    "only": 0,
+    "todo": 0
+  },
+  "files": {
+    "tests/api/advisories.test.ts": {
+      "describes": 1,
+      "tests": 7,
+      "assertions": 13,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/auth.test.ts": {
+      "describes": 3,
+      "tests": 3,
+      "assertions": 8,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/config.test.ts": {
+      "describes": 1,
+      "tests": 6,
+      "assertions": 11,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/events.test.ts": {
+      "describes": 1,
+      "tests": 9,
+      "assertions": 21,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/health.test.ts": {
+      "describes": 2,
+      "tests": 3,
+      "assertions": 6,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/services.test.ts": {
+      "describes": 1,
+      "tests": 11,
+      "assertions": 24,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/snapshots.test.ts": {
+      "describes": 15,
+      "tests": 34,
+      "assertions": 101,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/sse.test.ts": {
+      "describes": 1,
+      "tests": 1,
+      "assertions": 3,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/upload.test.ts": {
+      "describes": 1,
+      "tests": 9,
+      "assertions": 13,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/api/users.test.ts": {
+      "describes": 5,
+      "tests": 12,
+      "assertions": 24,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/unit/apiClient.test.ts": {
+      "describes": 1,
+      "tests": 8,
+      "assertions": 16,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/unit/markdown.test.ts": {
+      "describes": 3,
+      "tests": 17,
+      "assertions": 32,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "tests/unit/timeAgo.test.ts": {
+      "describes": 1,
+      "tests": 10,
+      "assertions": 15,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/advisories.spec.ts": {
+      "describes": 1,
+      "tests": 5,
+      "assertions": 14,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/config.spec.ts": {
+      "describes": 1,
+      "tests": 3,
+      "assertions": 9,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/events.spec.ts": {
+      "describes": 1,
+      "tests": 5,
+      "assertions": 16,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/services.spec.ts": {
+      "describes": 1,
+      "tests": 5,
+      "assertions": 17,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/snapshots.spec.ts": {
+      "describes": 1,
+      "tests": 6,
+      "assertions": 19,
+      "skipped": 1,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/admin/users.spec.ts": {
+      "describes": 1,
+      "tests": 3,
+      "assertions": 16,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/advisories-api.spec.ts": {
+      "describes": 1,
+      "tests": 4,
+      "assertions": 14,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/config-api.spec.ts": {
+      "describes": 1,
+      "tests": 2,
+      "assertions": 8,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/csrf-api.spec.ts": {
+      "describes": 1,
+      "tests": 3,
+      "assertions": 6,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/events-api.spec.ts": {
+      "describes": 1,
+      "tests": 4,
+      "assertions": 17,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/rbac-api.spec.ts": {
+      "describes": 1,
+      "tests": 8,
+      "assertions": 19,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/services-api.spec.ts": {
+      "describes": 1,
+      "tests": 4,
+      "assertions": 14,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/snapshots-api.spec.ts": {
+      "describes": 1,
+      "tests": 4,
+      "assertions": 18,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/sse-api.spec.ts": {
+      "describes": 1,
+      "tests": 3,
+      "assertions": 3,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/api/upload-api.spec.ts": {
+      "describes": 1,
+      "tests": 2,
+      "assertions": 5,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/auth.spec.ts": {
+      "describes": 1,
+      "tests": 7,
+      "assertions": 19,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/dashboard.spec.ts": {
+      "describes": 1,
+      "tests": 6,
+      "assertions": 12,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/health.spec.ts": {
+      "describes": 1,
+      "tests": 4,
+      "assertions": 10,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    },
+    "e2e/tests/preview.spec.ts": {
+      "describes": 1,
+      "tests": 3,
+      "assertions": 12,
+      "skipped": 0,
+      "only": 0,
+      "todo": 0
+    }
+  }
+}
