@@ -166,6 +166,8 @@ model PlatformUser {
   marketplaceListings MarketplaceListing[] @relation("MarketplaceListings")
   chatSessions        ChatSession[]        @relation("ChatSessions")
   postUpvotes         PostUpvote[]         @relation("PostUpvotes")
+  shifts              Shift[]              @relation("ShiftAssignee")
+  keyLogs             KeyLog[]             @relation("KeyLogPerformer")
 
   @@schema("platform")
 }
@@ -988,6 +990,63 @@ model PostUpvote {
   createdAt DateTime     @default(now())
 
   @@unique([postId, userId])
+  @@schema("platform")
+}
+
+// ---------------------------------------------------------------------------
+// Security & Concierge shift models (spec §4.16)
+// ---------------------------------------------------------------------------
+
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@schema("platform")
+}
+
+enum ShiftType {
+  SECURITY
+  CONCIERGE
+
+  @@schema("platform")
+}
+
+enum KeyAction {
+  CHECK_OUT
+  RETURN
+
+  @@schema("platform")
+}
+
+model Shift {
+  id         String       @id @default(uuid())
+  assigneeId String
+  assignee   PlatformUser @relation("ShiftAssignee", fields: [assigneeId], references: [id])
+  shiftType  ShiftType
+  status     ShiftStatus  @default(SCHEDULED)
+  startTime  DateTime
+  endTime    DateTime
+  notes      String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  keyLogs    KeyLog[]
+
+  @@schema("platform")
+}
+
+model KeyLog {
+  id          String       @id @default(uuid())
+  shiftId     String?
+  shift       Shift?       @relation(fields: [shiftId], references: [id])
+  keyName     String
+  action      KeyAction
+  performedBy String
+  performer   PlatformUser @relation("KeyLogPerformer", fields: [performedBy], references: [id])
+  notes       String?
+  createdAt   DateTime     @default(now())
+
   @@schema("platform")
 }
 
