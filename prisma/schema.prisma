@@ -168,6 +168,8 @@ model PlatformUser {
   postUpvotes         PostUpvote[]         @relation("PostUpvotes")
   shifts              Shift[]              @relation("ShiftAssignee")
   keyLogs             KeyLog[]             @relation("KeyLogPerformer")
+  threadFollows       ThreadFollow[]       @relation("ThreadFollows")
+  listingFavorites    ListingFavorite[]    @relation("ListingFavorites")
 
   @@schema("platform")
 }
@@ -466,6 +468,7 @@ model Visitor {
   accessWindowEnd   DateTime?
   vehiclePlate      String?
   parkingSpot       String?
+  overnight         Boolean       @default(false)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   logs              VisitorLog[]
@@ -878,11 +881,12 @@ model ForumThread {
   title      String
   authorId   String
   author     PlatformUser  @relation("ForumThreads", fields: [authorId], references: [id])
-  pinned     Boolean       @default(false)
-  locked     Boolean       @default(false)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  pinned     Boolean        @default(false)
+  locked     Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
   posts      ForumPost[]
+  follows    ThreadFollow[]
 
   @@schema("platform")
 }
@@ -924,9 +928,10 @@ model MarketplaceListing {
   category    String
   condition   String?
   status      ListingStatus @default(ACTIVE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   images      ListingImage[]
+  favorites   ListingFavorite[] @relation("ListingFavorites")
 
   @@schema("platform")
 }
@@ -990,6 +995,38 @@ model PostUpvote {
   createdAt DateTime     @default(now())
 
   @@unique([postId, userId])
+  @@schema("platform")
+}
+
+// ---------------------------------------------------------------------------
+// Forum thread follow (spec §4.19 REQ-4.19-3)
+// ---------------------------------------------------------------------------
+
+model ThreadFollow {
+  id        String       @id @default(uuid())
+  threadId  String
+  thread    ForumThread  @relation(fields: [threadId], references: [id])
+  userId    String
+  user      PlatformUser @relation("ThreadFollows", fields: [userId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@unique([threadId, userId])
+  @@schema("platform")
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace listing favorite (spec §4.17 REQ-4.17-2)
+// ---------------------------------------------------------------------------
+
+model ListingFavorite {
+  id        String              @id @default(uuid())
+  listingId String
+  listing   MarketplaceListing  @relation("ListingFavorites", fields: [listingId], references: [id])
+  userId    String
+  user      PlatformUser        @relation("ListingFavorites", fields: [userId], references: [id])
+  createdAt DateTime            @default(now())
+
+  @@unique([listingId, userId])
   @@schema("platform")
 }
 
