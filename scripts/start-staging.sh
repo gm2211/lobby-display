@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+echo "[staging] Applying Prisma schema to database..."
+cd /app
+npx prisma db push --skip-generate 2>&1 || echo "[staging] WARNING: prisma db push failed — DB may need manual migration"
+
 echo "[staging] Starting renzo-ai server on port 3001..."
 cd /app/renzo-ai
 AI_PORT=3001 LOG_LEVEL=info node dist/server.js &
