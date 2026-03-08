@@ -11,8 +11,8 @@ import { existsSync, readFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-const WORKTREE_ROOT = '/home/claude/repo/.worktrees/session-2026-02-26--evidence-ledger-system';
-const EVIDENCE_SCRIPT = join(WORKTREE_ROOT, 'scripts/evidence.sh');
+const PROJECT_ROOT = join(import.meta.dirname, '..', '..');
+const EVIDENCE_SCRIPT = join(PROJECT_ROOT, 'scripts/evidence.sh');
 
 /**
  * Run evidence.sh with given args in a temp directory.
