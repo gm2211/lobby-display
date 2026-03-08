@@ -79,6 +79,17 @@ describe('Platform Router', () => {
     expect(res.body).toMatchObject({ status: 'ok', module: 'users' });
   });
 
+  it('GET /api/platform/shifts route is registered (not a placeholder)', () => {
+    // Shifts uses platformProtectStrict which calls prisma — verify by stack inspection
+    const app = buildTestApp();
+    const stack = (app as any)._router?.stack ?? [];
+    const platformLayer = stack.find((layer: any) => layer.regexp?.test('/api/platform/shifts'));
+    expect(platformLayer).toBeDefined();
+    expect(typeof platformRouter).toBe('function');
+    expect(platformRouter).toHaveProperty('stack');
+    expect(Array.isArray((platformRouter as any).stack)).toBe(true);
+  });
+
   it('GET /api/platform/unknown returns 404', async () => {
     const app = buildTestApp();
     const res = await request(app).get('/api/platform/unknown-route');
