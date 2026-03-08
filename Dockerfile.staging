@@ -37,8 +37,8 @@ RUN cd renzo-ai && npx esbuild src/server.ts --bundle --platform=node --format=e
 ARG RENDER_GIT_COMMIT
 RUN echo "{\"hash\":\"${RENDER_GIT_COMMIT:-$(date +%s)}\"}" > build-version.json
 
-EXPOSE 3000
+EXPOSE 10000
 
 # Start script runs both servers
 RUN chmod +x /app/scripts/start-staging.sh
-CMD ["/app/scripts/start-staging.sh"]
+CMD ["bash", "/app/scripts/start-staging.sh"]
