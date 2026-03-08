@@ -11,7 +11,7 @@ on:
       base_url:
         description: 'Base URL to test against'
         required: false
-        default: 'https://renzo-staging.onrender.com'
+        default: 'https://seven7-hudson-staging.onrender.com'
 
   schedule:
     - cron: '0 6 * * *'   # Daily 6 AM UTC — catch staging drift
@@ -48,7 +48,7 @@ jobs:
 
       - name: Wait for staging to be ready
         env:
-          E2E_BASE_URL: ${{ inputs.base_url || 'https://renzo-staging.onrender.com' }}
+          E2E_BASE_URL: ${{ inputs.base_url || 'https://seven7-hudson-staging.onrender.com' }}
         run: |
           echo "Polling $E2E_BASE_URL/api/health ..."
           TIMEOUT=300
@@ -68,7 +68,7 @@ jobs:
 
       - name: Run E2E tests
         env:
-          E2E_BASE_URL: ${{ inputs.base_url || 'https://renzo-staging.onrender.com' }}
+          E2E_BASE_URL: ${{ inputs.base_url || 'https://seven7-hudson-staging.onrender.com' }}
           E2E_ADMIN_USER: ${{ secrets.E2E_ADMIN_USER }}
           E2E_ADMIN_PASS: ${{ secrets.E2E_ADMIN_PASS }}
           E2E_EDITOR_USER: ${{ secrets.E2E_EDITOR_USER }}

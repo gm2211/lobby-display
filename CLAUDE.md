@@ -100,7 +100,7 @@ Pushing to `main` does **not** trigger a Render deploy directly. The `auto-tag` 
 ### Deploy Monitoring
 
 - **Service ID (prod):** `srv-d69idbmsb7us73cro2rg`
-- **Live URL:** https://renzo.onrender.com
+- **Live URL:** https://seven7-hudson-dashboard-r8ib.onrender.com
 
 Monitor deploys after advancing a deploy branch (not after pushing to main):
 1. `list_deploys(serviceId: "srv-d69idbmsb7us73cro2rg", limit: 1)` to get the deploy ID
@@ -139,7 +139,7 @@ E2E tests live in `e2e/` and run against a live staging (or local) deployment. T
 
 ```bash
 npm run e2e:local     # Against http://localhost:3000
-npm run e2e:staging   # Against https://renzo-staging.onrender.com
+npm run e2e:staging   # Against https://seven7-hudson-staging.onrender.com
 npm run e2e:report    # View last HTML report
 ```
 
