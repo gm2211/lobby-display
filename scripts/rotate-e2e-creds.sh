@@ -14,7 +14,7 @@ if [ -z "${1:-}" ]; then
   exit 1
 fi
 
-BASE_URL="https://renzo-staging.onrender.com"
+BASE_URL="https://seven7-hudson-staging.onrender.com"
 COOKIE="$1"
 
 # --- Get CSRF token ---

@@ -422,7 +422,7 @@ npm run e2e:staging
 
 Or via the CI workflow — every push to `main` triggers:
 1. Auto-tag + deploy to staging
-2. E2E regression suite runs against `https://renzo-staging.onrender.com`
+2. E2E regression suite runs against `https://seven7-hudson-staging.onrender.com`
 3. Results appear in the GitHub Actions "E2E Regression (Staging)" workflow
 
 Check the latest E2E status:
