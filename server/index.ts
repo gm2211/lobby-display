@@ -157,4 +157,7 @@ async function start() {
   console.log(`Server running at http://localhost:${PORT}`);
 }
 
-start();
+start().catch(err => {
+  console.error('FATAL: Server failed to start:', err);
+  process.exit(1);
+});
