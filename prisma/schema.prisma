@@ -449,20 +449,24 @@ enum VisitorAction {
 }
 
 model Visitor {
-  id           String        @id @default(uuid())
-  hostId       String
-  host         PlatformUser  @relation("VisitorHost", fields: [hostId], references: [id])
-  guestName    String
-  guestEmail   String?
-  guestPhone   String?
-  purpose      String?
-  expectedDate DateTime
-  accessCode   String        @unique
-  status       VisitorStatus @default(EXPECTED)
-  notes        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  logs         VisitorLog[]
+  id                String        @id @default(uuid())
+  hostId            String
+  host              PlatformUser  @relation("VisitorHost", fields: [hostId], references: [id])
+  guestName         String
+  guestEmail        String?
+  guestPhone        String?
+  purpose           String?
+  expectedDate      DateTime
+  accessCode        String        @unique
+  status            VisitorStatus @default(EXPECTED)
+  notes             String?
+  accessWindowStart DateTime?
+  accessWindowEnd   DateTime?
+  vehiclePlate      String?
+  parkingSpot       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  logs              VisitorLog[]
 
   @@schema("platform")
 }
