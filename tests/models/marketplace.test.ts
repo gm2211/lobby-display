@@ -50,7 +50,7 @@ function getEnumValue(enumName: string, value: string) {
 describe('prisma validate', () => {
   it('should pass prisma validate', () => {
     expect(() => {
-      execSync('/home/claude/repo/node_modules/.bin/prisma validate', {
+      execSync('npx prisma validate', {
         stdio: 'pipe',
         cwd: process.cwd(),
         env: {
