@@ -18,6 +18,7 @@ import metricsRouter from './routes/metrics.js';
 import { platformProtect } from './middleware/platformAuth.js';
 import forumUpvotesRouter from './routes/forumUpvotes.js';
 import messagesRouter from './routes/messages.js';
+import chatRouter from './routes/chat.js';
 import { sseHandler } from './sse.js';
 import { csrfMiddleware } from './middleware/csrf.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -189,6 +190,9 @@ app.use('/api/forum', requireAuth, forumUpvotesRouter);
 
 // Messages: all routes require authentication (any role)
 app.use('/api/messages', requireAuth, messagesRouter);
+
+// Chat: admin-only AI chat proxy to renzo-ai server
+app.use('/api/chat', requireMinRole('ADMIN' as const), chatRouter);
 
 // Magic bytes for allowed image types
 const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {

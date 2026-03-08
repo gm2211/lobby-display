@@ -30,11 +30,10 @@ services:
   # ── Staging ─────────────────────────────────────────────
   - type: web
     name: renzo-staging
-    runtime: node
+    runtime: docker
     plan: free
     branch: deploy/staging
-    buildCommand: bash scripts/render-build.sh
-    startCommand: bash scripts/render-start.sh
+    dockerfilePath: ./Dockerfile.staging
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -44,3 +43,9 @@ services:
         value: production
       - key: COOKIE_SECRET
         generateValue: true
+      - key: CC_EMAIL
+        sync: false
+      - key: CC_PASSWORD
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
