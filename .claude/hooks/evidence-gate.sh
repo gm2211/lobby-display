@@ -46,9 +46,9 @@ log() {
 # Helper: check if an error output indicates a DB connection failure
 is_db_error() {
   local output="$1"
-  echo "$output" | grep -qiE \
-    'connect ECONNREFUSED|connection refused|ENOTFOUND|password authentication failed|database.*does not exist|Cannot find module.*prisma|prisma.*not found|PrismaClientInitializationError|datasource.*not reachable|Can.t reach database server' \
-    2>/dev/null
+  grep -qiE \
+    'connect ECONNREFUSED|connection refused|ENOTFOUND|password authentication failed|database.*does not exist|Cannot find module.*prisma|prisma.*not found|PrismaClientInitializationError|datasource.*not reachable|Can.t reach database server|P1001' \
+    <<< "$output" 2>/dev/null
 }
 
 run_gates_for_ticket() {
