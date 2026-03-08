@@ -21,3 +21,6 @@ cc-product-spec.zip
 # Test harness runtime artifacts
 .harness/
 docs/platform-spec/screenshots/
+
+# Claude
+.claude/settings.local.json
