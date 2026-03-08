@@ -25,6 +25,7 @@ If you add a route, update README's structure and DEVELOPMENT.md's patterns. If 
 
 | Trap | Rule |
 |------|------|
+| Production database | **NEVER allow any external IP connection to the production database.** No exceptions. No temporary access, no debugging, no one-off queries. All prod DB access goes through the application layer only. |
 | Auto-scrolling | **Do NOT touch `AutoScrollCards` CSS/JS without reading DEVELOPMENT.md first.** Breaking it is silent -- `scrollTop` stays at 0 with no errors. |
 | CSS shorthand mixing | **Never** mix shorthand (`border`) and longhand (`borderColor`) on the same React element. Causes rerender bugs. Always use all-longhand (`borderWidth`, `borderStyle`, `borderColor`). |
 | `asyncHandler()` | **Every** async Express route handler must be wrapped in `asyncHandler()`. Unwrapped handlers silently swallow errors. |

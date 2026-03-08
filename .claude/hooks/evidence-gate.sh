@@ -47,7 +47,7 @@ log() {
 is_db_error() {
   local output="$1"
   echo "$output" | grep -qiE \
-    'connect ECONNREFUSED|connection refused|ENOTFOUND|password authentication failed|database.*does not exist|Cannot find module.*prisma|prisma.*not found|PrismaClientInitializationError|datasource.*not reachable' \
+    'connect ECONNREFUSED|connection refused|ENOTFOUND|password authentication failed|database.*does not exist|Cannot find module.*prisma|prisma.*not found|PrismaClientInitializationError|datasource.*not reachable|Can.t reach database server' \
     2>/dev/null
 }
 
