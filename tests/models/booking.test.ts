@@ -89,9 +89,9 @@ describe('BookingStatus enum', () => {
     expect(getEnumValue('BookingStatus', 'COMPLETED')).toBeDefined();
   });
 
-  it('has exactly 5 values', () => {
+  it('has exactly 6 values (includes WAITLISTED)', () => {
     const e = getEnum('BookingStatus');
-    expect(e?.values).toHaveLength(5);
+    expect(e?.values).toHaveLength(6);
   });
 });
 
