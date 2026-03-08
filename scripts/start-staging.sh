@@ -1,26 +1,30 @@
 #!/bin/bash
-set -e
 
-echo "[staging] Applying Prisma schema to database..."
+echo "[staging] Node $(node --version) | PORT=${PORT:-not set} | PWD=$(pwd)"
+
+# Apply schema changes (non-blocking — don't let this kill startup)
+echo "[staging] Running prisma db push..."
 cd /app
-npx prisma db push --skip-generate 2>&1 || echo "[staging] WARNING: prisma db push failed — DB may need manual migration"
+npx prisma db push --skip-generate 2>&1 || echo "[staging] WARNING: prisma db push failed"
 
-echo "[staging] Starting renzo-ai server on port 3001..."
+# Start renzo-ai (non-critical — if it dies, main server continues)
+echo "[staging] Starting renzo-ai on port 3001..."
 cd /app/renzo-ai
-AI_PORT=3001 LOG_LEVEL=info node dist/server.js &
+AI_PORT=3001 LOG_LEVEL=info node dist/server.js 2>&1 &
 AI_PID=$!
 
-echo "[staging] Starting main Renzo server on port 3000..."
+# Start main server
+echo "[staging] Starting main server..."
 cd /app
-NODE_ENV=production node dist-server/index.js &
+NODE_ENV=production node dist-server/index.js 2>&1 &
 MAIN_PID=$!
 
-echo "[staging] Both servers running (main=$MAIN_PID, ai=$AI_PID)"
+echo "[staging] PIDs: main=$MAIN_PID ai=$AI_PID"
 
-# Wait for either to exit
-wait -n $MAIN_PID $AI_PID
-EXIT_CODE=$?
+# Wait for the MAIN server — that's the critical one
+wait $MAIN_PID
+MAIN_EXIT=$?
 
-echo "[staging] A server exited with code $EXIT_CODE — shutting down"
-kill $MAIN_PID $AI_PID 2>/dev/null || true
-exit $EXIT_CODE
+echo "[staging] Main server exited ($MAIN_EXIT)"
+kill $AI_PID 2>/dev/null || true
+exit $MAIN_EXIT
