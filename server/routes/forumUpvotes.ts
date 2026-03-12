@@ -21,6 +21,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { asyncHandler, NotFoundError } from '../middleware/errorHandler.js';
 import { toggleUpvote, getUpvoteCount, hasUserUpvoted } from '../services/forumUpvotes.js';
+import { getOrCreatePlatformUser } from '../middleware/platformAuth.js';
 
 const router = Router();
 
@@ -75,12 +76,12 @@ router.post(
     }
 
     const userId = req.session.user?.id;
+    const userRole = req.session.user?.role;
 
-    // Find the platform user linked to the session user
-    const platformUser = await prisma.platformUser.findUnique({
-      where: { userId },
-      select: { id: true },
-    });
+    // Find or auto-provision the platform user linked to the session user
+    const platformUser = userId && userRole
+      ? await getOrCreatePlatformUser(userId, userRole)
+      : null;
 
     if (!platformUser) {
       throw new NotFoundError('No platform user profile found for current user');

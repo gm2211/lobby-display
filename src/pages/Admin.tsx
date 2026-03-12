@@ -10,6 +10,7 @@ import {
   EventsSection,
   AdvisoriesSection,
   UsersSection,
+  BrandingSection,
 } from '../components/admin';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -186,6 +187,7 @@ export default function Admin() {
       </header>
 
       <div className="admin-page" style={styles.page}>
+        <BrandingSection onSave={onSave} />
         <ConfigSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
         <ServicesSection services={services} config={config} onSave={onSave} hasChanged={sectionChanges.services} publishedServices={published?.services || null} />
         <EventsSection events={events} config={config} onSave={onSave} hasChanged={sectionChanges.events} publishedEvents={published?.events || null} />
