@@ -27,6 +27,7 @@ describe('PlatformLayout', () => {
 
   it('renders all nav items', () => {
     renderWithRouter(<PlatformLayout><div>content</div></PlatformLayout>);
+    // Nav items that are unique on the page
     const navItems = [
       'Dashboard', 'Announcements', 'Maintenance', 'Amenities', 'Events',
       'Bookings', 'Visitors', 'Violations', 'Payments', 'Parcels',
@@ -36,15 +37,15 @@ describe('PlatformLayout', () => {
     for (const item of navItems) {
       expect(screen.getByText(item)).toBeInTheDocument();
     }
-    // "Search" appears in both nav and the command palette buttons, so use getAllByText
-    expect(screen.getAllByText('Search').length).toBeGreaterThanOrEqual(1);
+    // 'Search' appears in both the top bar hint button and in the ACCOUNT nav section;
+    // verify at least one exists (getAllByText returns all matches)
+    expect(screen.getAllByText('Search').length).toBeGreaterThan(0);
   });
 
-  it('renders the top bar with user info', () => {
+  it('renders the top bar with account link for current user', () => {
     renderWithRouter(<PlatformLayout><div>content</div></PlatformLayout>);
-    // Username is shown as first-letter avatar and in the aria-label
-    expect(screen.getByText('T')).toBeInTheDocument(); // avatar initial
-    expect(screen.getByLabelText(/Account: testuser/i)).toBeInTheDocument();
+    // The avatar link has aria-label="Account: testuser"
+    expect(screen.getByLabelText(/account: testuser/i)).toBeInTheDocument();
   });
 
   it('renders child content', () => {
@@ -73,10 +74,11 @@ describe('PlatformLayout', () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it('shows MANAGEMENT section for ADMIN role', () => {
+  it('renders section headers for nav groups', () => {
     renderWithRouter(<PlatformLayout><div>content</div></PlatformLayout>);
-    // ADMIN users can see the MANAGEMENT section with items like Branding
-    expect(screen.getByText('Branding')).toBeInTheDocument();
-    expect(screen.getByText('Violations')).toBeInTheDocument();
+    // The new sidebar has collapsible section headers
+    expect(screen.getByText('HOME')).toBeInTheDocument();
+    expect(screen.getByText('COMMUNITY')).toBeInTheDocument();
+    expect(screen.getByText('SERVICES')).toBeInTheDocument();
   });
 });

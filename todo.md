@@ -1,7 +1,7 @@
 # Current Work — Chat AI + Platform Spec
 
 ## Phase 1: Chat AI (staging only)
-- [x] Create renzo-ai server with condo-control MCP tools
+- [x] Create renzo-ai server with platform MCP tools
 - [x] Create chat engine (keyword-based intent → tool calls → formatted response)
 - [x] Create HTTP server for renzo-ai (port 3001)
 - [x] Create Dockerfile.staging (runs both servers)
@@ -45,7 +45,7 @@
 - renzo-ai/src/server.ts — HTTP server on port 3001
 - renzo-ai/src/chat-engine.ts — keyword-based intent router
 - renzo-ai/src/groq-engine.ts — Groq LLM engine
-- renzo-ai/src/tools/index.ts — tool registry (from condo-control MCP)
+- renzo-ai/src/tools/index.ts — tool registry (platform MCP)
 - Dockerfile.staging — Docker image for staging
 - scripts/start-staging.sh — starts both servers
 - server/routes/chat.ts — admin-only chat proxy
@@ -60,8 +60,8 @@
 - server/routes/platform/announcements.ts — UUID IDs, auth guards, expiry filtering
 
 ## Env vars needed on staging:
-- CC_EMAIL — Condo Control login email
-- CC_PASSWORD — Condo Control login password
+- CC_EMAIL — Platform login email
+- CC_PASSWORD — Platform login password
 - GROQ_API_KEY — Groq API key (optional, for LLM mode)
 
 ## CRITICAL: DO NOT TOUCH PROD
