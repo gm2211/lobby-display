@@ -15,3 +15,4 @@ export { ServicesSection } from './ServicesSection';
 export { EventsSection } from './EventsSection';
 export { AdvisoriesSection } from './AdvisoriesSection';
 export { UsersSection } from './UsersSection';
+export { BrandingSection } from './BrandingSection';

@@ -14,6 +14,7 @@ import snapshotsRouter from './routes/snapshots.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import platformRouter from './routes/platform/index.js';
+import brandingRouter from './routes/platform/branding.js';
 import metricsRouter from './routes/metrics.js';
 import { platformProtect } from './middleware/platformAuth.js';
 import forumUpvotesRouter from './routes/forumUpvotes.js';
@@ -174,6 +175,10 @@ function snapshotsProtect(req: Request, _res: Response, next: NextFunction) {
   }
   next();
 }
+
+// Branding endpoint: GET is public (login page needs it), PUT requires EDITOR+
+// Mount BEFORE platformProtect so the GET works without a session.
+app.use('/api/platform/branding', brandingRouter);
 
 // Platform API routes (auth-protected, writes require EDITOR+)
 app.use('/api/platform', platformProtect, platformRouter);

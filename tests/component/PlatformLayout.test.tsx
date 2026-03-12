@@ -31,16 +31,20 @@ describe('PlatformLayout', () => {
       'Dashboard', 'Announcements', 'Maintenance', 'Amenities', 'Events',
       'Bookings', 'Visitors', 'Violations', 'Payments', 'Parcels',
       'Directory', 'Forum', 'Marketplace', 'Documents', 'Training',
-      'Surveys', 'Consent', 'Search',
+      'Surveys', 'Consent',
     ];
     for (const item of navItems) {
       expect(screen.getByText(item)).toBeInTheDocument();
     }
+    // "Search" appears in both nav and the command palette buttons, so use getAllByText
+    expect(screen.getAllByText('Search').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders the top bar with user info', () => {
     renderWithRouter(<PlatformLayout><div>content</div></PlatformLayout>);
-    expect(screen.getByText('testuser')).toBeInTheDocument();
+    // Username is shown as first-letter avatar and in the aria-label
+    expect(screen.getByText('T')).toBeInTheDocument(); // avatar initial
+    expect(screen.getByLabelText(/Account: testuser/i)).toBeInTheDocument();
   });
 
   it('renders child content', () => {
@@ -69,8 +73,10 @@ describe('PlatformLayout', () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it('shows role badge in top bar', () => {
+  it('shows MANAGEMENT section for ADMIN role', () => {
     renderWithRouter(<PlatformLayout><div>content</div></PlatformLayout>);
-    expect(screen.getByText('ADMIN')).toBeInTheDocument();
+    // ADMIN users can see the MANAGEMENT section with items like Branding
+    expect(screen.getByText('Branding')).toBeInTheDocument();
+    expect(screen.getByText('Violations')).toBeInTheDocument();
   });
 });

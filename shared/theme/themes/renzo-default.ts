@@ -2,8 +2,8 @@ import type { TenantTheme } from '../types';
 
 export const renzoDefaultTheme: TenantTheme = {
   id: 'renzo-default',
-  buildingName: 'Your Building',
-  portalTitle: 'Resident Portal',
+  buildingName: 'Renzo',
+  portalTitle: 'Renzo Resident Portal',
   dashboardTitle: 'Building Updates',
   htmlTitle: 'Renzo',
 
