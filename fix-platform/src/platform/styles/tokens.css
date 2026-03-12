@@ -1,0 +1,393 @@
+/**
+ * Renzo Platform Design Tokens
+ *
+ * CSS custom properties establishing the light residential aesthetic for
+ * platform-facing pages. Matches the dashboard light theme: warm cream,
+ * white cards, teal/orange accents, dark text.
+ *
+ * Usage:
+ *   var(--platform-color-primary)
+ *   var(--platform-space-4)
+ *   etc.
+ *
+ * Import this file in PlatformLayout.tsx or any platform entry point.
+ */
+
+/* ============================================================
+   LIGHT MODE (default)
+   ============================================================ */
+:root,
+[data-platform-theme="light"] {
+  /* ----------------------------------------------------------
+     COLOR PALETTE — Primary (Teal)
+     ---------------------------------------------------------- */
+  --platform-color-primary-50:  #e8f5f5;
+  --platform-color-primary-100: #c0e2e2;
+  --platform-color-primary-200: #94cccc;
+  --platform-color-primary-300: #63b6b5;
+  --platform-color-primary-400: #3aa3a1;
+  --platform-color-primary-500: #1a5c5a;  /* core teal */
+  --platform-color-primary-600: #164f4d;
+  --platform-color-primary-700: #0f3d3b;
+  --platform-color-primary-800: #092b29;
+  --platform-color-primary-900: #041918;
+
+  /* ----------------------------------------------------------
+     COLOR PALETTE — Secondary (Orange / Amber Accent)
+     ---------------------------------------------------------- */
+  --platform-color-secondary-50:  #fff8e1;
+  --platform-color-secondary-100: #ffedb3;
+  --platform-color-secondary-200: #ffe082;
+  --platform-color-secondary-300: #ffd54f;
+  --platform-color-secondary-400: #ffca28;
+  --platform-color-secondary-500: #e6a000;  /* core orange */
+  --platform-color-secondary-600: #b07800;
+  --platform-color-secondary-700: #8a5e00;
+  --platform-color-secondary-800: #634400;
+  --platform-color-secondary-900: #3d2a00;
+
+  /* ----------------------------------------------------------
+     COLOR PALETTE — Neutrals (Warm Cream / Stone)
+     ---------------------------------------------------------- */
+  --platform-color-neutral-0:   #ffffff;
+  --platform-color-neutral-50:  #fafafa;   /* list card bg */
+  --platform-color-neutral-100: #f9f9f9;   /* form group bg */
+  --platform-color-neutral-200: #f5f0eb;   /* page background (warm cream) */
+  --platform-color-neutral-300: #e0e0e0;   /* card border */
+  --platform-color-neutral-400: #ddd;      /* input border */
+  --platform-color-neutral-500: #ccc;      /* strong border */
+  --platform-color-neutral-600: #888;      /* muted text */
+  --platform-color-neutral-700: #444;      /* secondary text */
+  --platform-color-neutral-800: #333;      /* primary text */
+  --platform-color-neutral-900: #111;      /* darkest text */
+
+  /* ----------------------------------------------------------
+     COLOR PALETTE — Semantic
+     ---------------------------------------------------------- */
+  --platform-color-success-light: #e8f5e9;
+  --platform-color-success:       #2e7d32;
+  --platform-color-success-dark:  #1b5e20;
+
+  --platform-color-warning-light: #fff8e1;
+  --platform-color-warning:       #b07800;
+  --platform-color-warning-dark:  #8a5e00;
+
+  --platform-color-error-light:   #ffebee;
+  --platform-color-error:         #c62828;
+  --platform-color-error-dark:    #8e0000;
+
+  --platform-color-info-light:    #e0f7fa;
+  --platform-color-info:          #00838f;
+  --platform-color-info-dark:     #006064;
+
+  /* ----------------------------------------------------------
+     SEMANTIC SURFACE / TEXT (resolved tokens for components)
+     ---------------------------------------------------------- */
+  --platform-bg-page:        #f5f0eb;
+  --platform-bg-surface:     #ffffff;
+  --platform-bg-subtle:      #f9f9f9;
+  --platform-bg-muted:       #fafafa;
+
+  --platform-text-primary:   #333;
+  --platform-text-secondary: #444;
+  --platform-text-muted:     #888;
+  --platform-text-inverse:   #ffffff;
+  --platform-text-accent:    var(--platform-color-primary-500);
+
+  --platform-border-subtle:  #eee;
+  --platform-border-default: #ddd;
+  --platform-border-strong:  #ccc;
+  --platform-border-accent:  var(--platform-color-primary-500);
+
+  --platform-accent-primary:   #1a5c5a;
+  --platform-accent-secondary: var(--platform-color-secondary-500);
+
+  /* Status tokens for violations pages */
+  --platform-status-open:               #c9921b;
+  --platform-status-open-bg:            #fff3cd;
+  --platform-status-acknowledged:       #1a5c5a;
+  --platform-status-acknowledged-bg:    #e8f5f5;
+  --platform-status-resolved:           #2e7d32;
+  --platform-status-resolved-bg:        #f0fff4;
+  --platform-status-appealed:           #7a1f2b;
+  --platform-status-appealed-bg:        #fff0f0;
+  --platform-status-dismissed:          #888;
+  --platform-status-dismissed-bg:       #f5f5f5;
+
+  /* Severity tokens */
+  --platform-severity-low:              #2e7d32;
+  --platform-severity-medium:           #b07800;
+  --platform-severity-high:             #c62828;
+  --platform-severity-critical:         #7a1f2b;
+}
+
+/* ============================================================
+   DARK MODE — neutralized to match light mode for now
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-platform-theme="light"]) {
+    --platform-bg-page:        #f5f0eb;
+    --platform-bg-surface:     #ffffff;
+    --platform-bg-subtle:      #f9f9f9;
+    --platform-bg-muted:       #fafafa;
+
+    --platform-text-primary:   #333;
+    --platform-text-secondary: #444;
+    --platform-text-muted:     #888;
+    --platform-text-inverse:   #ffffff;
+    --platform-text-accent:    var(--platform-color-primary-500);
+
+    --platform-border-subtle:  #eee;
+    --platform-border-default: #ddd;
+    --platform-border-strong:  #ccc;
+    --platform-border-accent:  var(--platform-color-primary-500);
+
+    --platform-accent-primary:   var(--platform-color-primary-500);
+    --platform-accent-secondary: var(--platform-color-secondary-500);
+  }
+}
+
+[data-platform-theme="dark"] {
+  --platform-bg-page:        #f5f0eb;
+  --platform-bg-surface:     #ffffff;
+  --platform-bg-subtle:      #f9f9f9;
+  --platform-bg-muted:       #fafafa;
+
+  --platform-text-primary:   #333;
+  --platform-text-secondary: #444;
+  --platform-text-muted:     #888;
+  --platform-text-inverse:   #ffffff;
+  --platform-text-accent:    var(--platform-color-primary-500);
+
+  --platform-border-subtle:  #eee;
+  --platform-border-default: #ddd;
+  --platform-border-strong:  #ccc;
+  --platform-border-accent:  var(--platform-color-primary-500);
+
+  --platform-accent-primary:   var(--platform-color-primary-500);
+  --platform-accent-secondary: var(--platform-color-secondary-500);
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+:root {
+  /* Font families */
+  --platform-font-sans:  'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --platform-font-serif: Georgia, 'Times New Roman', serif;
+  --platform-font-mono:  'SF Mono', 'Fira Code', Consolas, monospace;
+
+  /* Font sizes — heading scale */
+  --platform-text-h1:      2.25rem;   /* 36px */
+  --platform-text-h2:      1.875rem;  /* 30px */
+  --platform-text-h3:      1.5rem;    /* 24px */
+  --platform-text-h4:      1.25rem;   /* 20px */
+  --platform-text-h5:      1.125rem;  /* 18px */
+  --platform-text-h6:      1rem;      /* 16px */
+
+  /* Font sizes — body scale */
+  --platform-text-xl:      1.25rem;   /* 20px */
+  --platform-text-lg:      1.125rem;  /* 18px */
+  --platform-text-base:    1rem;      /* 16px */
+  --platform-text-sm:      0.875rem;  /* 14px */
+  --platform-text-xs:      0.75rem;   /* 12px */
+  --platform-text-caption: 0.6875rem; /* 11px */
+
+  /* Font weights */
+  --platform-weight-light:    300;
+  --platform-weight-regular:  400;
+  --platform-weight-medium:   500;
+  --platform-weight-semibold: 600;
+  --platform-weight-bold:     700;
+  --platform-weight-extrabold: 800;
+
+  /* Line heights */
+  --platform-leading-tight:  1.25;
+  --platform-leading-snug:   1.375;
+  --platform-leading-normal: 1.5;
+  --platform-leading-relaxed: 1.625;
+  --platform-leading-loose:  2;
+
+  /* Letter spacing */
+  --platform-tracking-tight:   -0.025em;
+  --platform-tracking-normal:   0;
+  --platform-tracking-wide:     0.025em;
+  --platform-tracking-wider:    0.05em;
+  --platform-tracking-widest:   0.1em;
+
+  /* ============================================================
+     SPACING SCALE (4px base)
+     ============================================================ */
+  --platform-space-0:   0;
+  --platform-space-1:   0.25rem;   /*  4px */
+  --platform-space-2:   0.5rem;    /*  8px */
+  --platform-space-3:   0.75rem;   /* 12px */
+  --platform-space-4:   1rem;      /* 16px */
+  --platform-space-6:   1.5rem;    /* 24px */
+  --platform-space-8:   2rem;      /* 32px */
+  --platform-space-12:  3rem;      /* 48px */
+  --platform-space-16:  4rem;      /* 64px */
+  --platform-space-20:  5rem;      /* 80px */
+  --platform-space-24:  6rem;      /* 96px */
+
+  /* ============================================================
+     BORDER RADIUS
+     ============================================================ */
+  --platform-radius-none:   0;
+  --platform-radius-sm:     0.125rem;  /*  2px */
+  --platform-radius-base:   0.25rem;   /*  4px */
+  --platform-radius-md:     0.375rem;  /*  6px */
+  --platform-radius-lg:     0.5rem;    /*  8px */
+  --platform-radius-xl:     0.625rem;  /* 10px */
+  --platform-radius-2xl:    0.75rem;   /* 12px */
+  --platform-radius-3xl:    1rem;      /* 16px */
+  --platform-radius-full:   9999px;
+
+  /* ============================================================
+     SHADOW / ELEVATION
+     ============================================================ */
+
+  /* Elevation 0 — flat, no shadow */
+  --platform-shadow-none: none;
+
+  /* Elevation 1 — subtle lift (cards, inputs) — matches dashboard */
+  --platform-shadow-sm:
+    0 1px 4px rgba(0, 0, 0, 0.07);
+
+  /* Elevation 2 — standard card shadow */
+  --platform-shadow-base:
+    0 1px 4px rgba(0, 0, 0, 0.07),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* Elevation 3 — raised panels, dropdowns */
+  --platform-shadow-md:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* Elevation 4 — modals, overlays */
+  --platform-shadow-lg:
+    0 4px 16px rgba(0, 0, 0, 0.10),
+    0 8px 32px rgba(0, 0, 0, 0.10);
+
+  /* Elevation 5 — top-level overlays (e.g. full-screen modal) */
+  --platform-shadow-xl:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 16px 64px rgba(0, 0, 0, 0.12);
+
+  /* Teal accent glow — used for highlighted/active states */
+  --platform-shadow-accent:
+    0 0 0 2px rgba(26, 92, 90, 0.25),
+    0 2px 8px rgba(26, 92, 90, 0.15);
+
+  /* Inner shadow for inset inputs / pressed states */
+  --platform-shadow-inset:
+    inset 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  /* ============================================================
+     Z-INDEX SCALE
+     ============================================================ */
+  --platform-z-below:   -1;
+  --platform-z-base:     0;
+  --platform-z-raised:   10;
+  --platform-z-dropdown: 100;
+  --platform-z-sticky:   200;
+  --platform-z-overlay:  300;
+  --platform-z-modal:    400;
+  --platform-z-toast:    500;
+
+  /* ============================================================
+     TRANSITION
+     ============================================================ */
+  --platform-duration-fast:   100ms;
+  --platform-duration-base:   200ms;
+  --platform-duration-slow:   300ms;
+  --platform-duration-slower: 500ms;
+
+  --platform-ease-default:  cubic-bezier(0.4, 0, 0.2, 1);
+  --platform-ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --platform-ease-out:      cubic-bezier(0, 0, 0.2, 1);
+  --platform-ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ============================================================
+     COMPATIBILITY ALIASES — short-form vars used by components
+     Maps concise names to the full token system above.
+     ============================================================ */
+
+  /* Surfaces */
+  --platform-bg:              var(--platform-bg-page);
+  --platform-bg-card:         var(--platform-bg-surface);
+  --platform-surface:         var(--platform-bg-surface);
+  --platform-surface-hover:   var(--platform-bg-subtle);
+
+  /* Card / list item surfaces */
+  --platform-bg-card:         #ffffff;
+  --platform-bg-card-hover:   #f9f9f9;
+  --platform-bg-secondary:    #f9f9f9;
+
+  /* Borders */
+  --platform-border:          var(--platform-border-default);
+  --platform-border-light:    var(--platform-border-subtle);
+
+  /* Header gradient — used by PlatformLayout top bar */
+  --platform-header-gradient-start: var(--platform-color-primary-500);
+  --platform-header-gradient-end:   var(--platform-color-primary-700);
+
+  /* Accent — teal (matches dashboard primary) */
+  --platform-accent:          var(--platform-color-primary-500);
+  --platform-accent-hover:    var(--platform-color-primary-600);
+
+  /* Badge / pinned (board member highlight) */
+  --platform-pinned:          #b07800;
+  --platform-badge-bg:        #f0f0f0;
+  --platform-badge-text:      #444;
+
+  /* Status indicators */
+  --platform-status-available:        var(--platform-color-success);
+  --platform-status-available-bg:     var(--platform-color-success-light);
+  --platform-status-limited:          var(--platform-color-warning);
+  --platform-status-limited-bg:       var(--platform-color-warning-light);
+  --platform-status-unavailable:      var(--platform-color-error);
+  --platform-status-unavailable-bg:   var(--platform-color-error-light);
+
+  /* Parcel status badge tokens */
+  --platform-status-received:         #1a5c5a;
+  --platform-status-received-bg:      #e8f5f5;
+  --platform-status-notified:         #b07800;
+  --platform-status-notified-bg:      #fff8e1;
+  --platform-status-picked-up:        #2e7d32;
+  --platform-status-picked-up-bg:     #f0fff4;
+
+  /* Maintenance / booking status colors */
+  --platform-status-open:             #1a5f8a;
+  --platform-status-open-bg:          #d0e8f5;
+  --platform-status-in-progress:      #c9921b;
+  --platform-status-in-progress-bg:   #fff3cd;
+  --platform-status-completed:        #2d7a47;
+  --platform-status-completed-bg:     #d4edda;
+  --platform-status-cancelled:        #888;
+  --platform-status-cancelled-bg:     #f0f0f0;
+
+  /* Priority colors */
+  --platform-priority-low:            #888;
+  --platform-priority-medium:         #c9921b;
+  --platform-priority-high:           #c9631b;
+  --platform-priority-urgent:         #b93040;
+
+  /* Font size aliases */
+  --platform-font-sm:   var(--platform-text-xs);
+  --platform-font-base: var(--platform-text-sm);
+  --platform-font-md:   var(--platform-text-base);
+  --platform-font-lg:   var(--platform-text-lg);
+  --platform-font-xl:   var(--platform-text-xl);
+
+  /* Spacing aliases */
+  --platform-spacing-xs: var(--platform-space-1);
+  --platform-spacing-sm: var(--platform-space-2);
+  --platform-spacing-md: var(--platform-space-4);
+  --platform-spacing-lg: var(--platform-space-6);
+  --platform-spacing-xl: var(--platform-space-8);
+
+  /* Layout */
+  --platform-sidebar-width:  240px;
+  --platform-topbar-height:  56px;
+}

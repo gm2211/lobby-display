@@ -1,0 +1,47 @@
+# Dockerfile for staging — runs main Renzo server + renzo-ai server
+# ONLY used for staging; production continues to use runtime: node
+# NOTE: Playwright/Chromium omitted to keep image small for free tier.
+# CC auth relies on CC_EMAIL + CC_PASSWORD env vars (HTTP-based re-auth).
+
+FROM node:20-slim
+
+# Install OpenSSL and other deps needed by Prisma
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy root package files first for layer caching
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+
+# Install main dependencies (include dev for build tools)
+RUN npm ci --include=dev
+
+# Copy renzo-ai package files and install (skip playwright)
+COPY renzo-ai/package.json renzo-ai/
+RUN cd renzo-ai && npm install --ignore-scripts
+
+# Copy all source
+COPY . .
+
+# Generate Prisma client (no DB needed for generate)
+RUN npx prisma generate
+
+# Build frontend (vite)
+RUN npx vite build
+
+# Build main server (esbuild)
+RUN npx esbuild server/index.ts --bundle --platform=node --format=esm --outdir=dist-server --packages=external
+
+# Build renzo-ai server (esbuild)
+RUN cd renzo-ai && npx esbuild src/server.ts --bundle --platform=node --format=esm --outdir=dist --packages=external
+
+# Write build version
+ARG RENDER_GIT_COMMIT
+RUN echo "{\"hash\":\"${RENDER_GIT_COMMIT:-$(date +%s)}\"}" > build-version.json
+
+EXPOSE 10000
+
+# Start script runs both servers
+RUN chmod +x /app/scripts/start-staging.sh
+CMD ["bash", "/app/scripts/start-staging.sh"]

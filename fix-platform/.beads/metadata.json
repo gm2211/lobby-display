@@ -1,0 +1,6 @@
+{
+  "database": "jsonl",
+  "jsonl_export": "issues.jsonl",
+  "backend": "jsonl",
+  "dolt_database": "beads_h77"
+}
