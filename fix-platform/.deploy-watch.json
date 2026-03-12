@@ -1,7 +1,0 @@
-{
-  "provider": "renderdotcom.py",
-  "renderdotcom.py": {
-    "serviceId": "srv-d6cv1cggjchc73e4jv5g",
-    "apiKeyEnv": "RENDER_API_KEY"
-  }
-}

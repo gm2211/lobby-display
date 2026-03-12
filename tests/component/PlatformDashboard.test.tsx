@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlatformDashboard from '../../src/platform/pages/PlatformDashboard';
-import type { PlatformAnnouncement, PlatformBooking, PlatformMaintenanceRequest } from '../../src/platform/pages/PlatformDashboard';
+import type { Announcement, Booking, MaintenanceRequest } from '../../src/platform/types';
 import { ThemeProvider } from '../../src/theme/ThemeContext';
 
 // ---- Auth mock ------------------------------------------------------------
@@ -55,6 +55,7 @@ describe('PlatformDashboard', () => {
     vi.spyOn(global, 'fetch').mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk([]);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -88,7 +89,7 @@ describe('PlatformDashboard', () => {
   it('renders 4 quick-action cards', async () => {
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByTestId('quick-actions')).toBeInTheDocument();
+      expect(screen.getByLabelText('Pay Rent')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('Pay Rent')).toBeInTheDocument();
     expect(screen.getByLabelText('Book Amenity')).toBeInTheDocument();
@@ -101,7 +102,7 @@ describe('PlatformDashboard', () => {
   it('shows empty state for announcements when list is empty', async () => {
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByText('No announcements at this time.')).toBeInTheDocument();
+      expect(screen.getByText('No announcements yet.')).toBeInTheDocument();
     });
   });
 
@@ -115,20 +116,45 @@ describe('PlatformDashboard', () => {
   it('shows empty state for maintenance when list is empty', async () => {
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByText('No maintenance requests.')).toBeInTheDocument();
+      expect(screen.getByText('No open requests.')).toBeInTheDocument();
     });
   });
 
   // -- Data rendering -------------------------------------------------------
 
   it('renders announcements from API', async () => {
-    const announcements: PlatformAnnouncement[] = [
-      { id: 1, title: 'Pool Closed', body: 'Pool closed for maintenance', publishedAt: new Date().toISOString() },
-      { id: 2, title: 'Gym Open Late', body: 'Extended hours this weekend', publishedAt: new Date().toISOString() },
+    const announcements: Partial<Announcement>[] = [
+      {
+        id: 1,
+        title: 'Pool Closed',
+        body: 'Pool closed for maintenance',
+        createdAt: new Date().toISOString(),
+        category: 'GENERAL',
+        priority: 'NORMAL',
+        pinned: false,
+        active: true,
+        sortOrder: 0,
+        updatedAt: new Date().toISOString(),
+        isRead: false,
+      },
+      {
+        id: 2,
+        title: 'Gym Open Late',
+        body: 'Extended hours this weekend',
+        createdAt: new Date().toISOString(),
+        category: 'GENERAL',
+        priority: 'NORMAL',
+        pinned: false,
+        active: true,
+        sortOrder: 1,
+        updatedAt: new Date().toISOString(),
+        isRead: false,
+      },
     ];
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk(announcements);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -144,15 +170,16 @@ describe('PlatformDashboard', () => {
   });
 
   it('shows only the 3 most recent announcements', async () => {
-    const announcements: PlatformAnnouncement[] = [
-      { id: 1, title: 'Notice 1', body: '', publishedAt: new Date().toISOString() },
-      { id: 2, title: 'Notice 2', body: '', publishedAt: new Date().toISOString() },
-      { id: 3, title: 'Notice 3', body: '', publishedAt: new Date().toISOString() },
-      { id: 4, title: 'Notice 4', body: '', publishedAt: new Date().toISOString() },
+    const announcements: Partial<Announcement>[] = [
+      { id: 1, title: 'Notice 1', body: '', createdAt: new Date().toISOString(), category: 'GENERAL', priority: 'NORMAL', pinned: false, active: true, sortOrder: 0, updatedAt: new Date().toISOString(), isRead: false },
+      { id: 2, title: 'Notice 2', body: '', createdAt: new Date().toISOString(), category: 'GENERAL', priority: 'NORMAL', pinned: false, active: true, sortOrder: 1, updatedAt: new Date().toISOString(), isRead: false },
+      { id: 3, title: 'Notice 3', body: '', createdAt: new Date().toISOString(), category: 'GENERAL', priority: 'NORMAL', pinned: false, active: true, sortOrder: 2, updatedAt: new Date().toISOString(), isRead: false },
+      { id: 4, title: 'Notice 4', body: '', createdAt: new Date().toISOString(), category: 'GENERAL', priority: 'NORMAL', pinned: false, active: true, sortOrder: 3, updatedAt: new Date().toISOString(), isRead: false },
     ];
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk(announcements);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -164,12 +191,45 @@ describe('PlatformDashboard', () => {
   });
 
   it('renders bookings from API', async () => {
-    const bookings: PlatformBooking[] = [
-      { id: 1, amenity: 'Rooftop Lounge', date: '2026-03-15', timeSlot: '6:00 PM – 8:00 PM', status: 'confirmed' },
+    const bookings: Partial<Booking>[] = [
+      {
+        id: 'booking-1',
+        amenityId: 'amenity-1',
+        amenity: {
+          id: 'amenity-1',
+          name: 'Rooftop Lounge',
+          description: null,
+          location: null,
+          capacity: null,
+          requiresApproval: false,
+          pricePerHour: null,
+          currency: 'USD',
+          availableFrom: '08:00',
+          availableTo: '22:00',
+          daysAvailable: [1, 2, 3, 4, 5],
+          minAdvanceHours: 1,
+          maxAdvanceHours: 168,
+          maxDurationHours: 4,
+          active: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        startTime: '2026-03-15T18:00:00.000Z',
+        endTime: '2026-03-15T20:00:00.000Z',
+        status: 'APPROVED',
+        userId: 'user-1',
+        notes: null,
+        approvedBy: null,
+        approvedAt: null,
+        cancellationReason: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
     ];
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk([]);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk(bookings);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -183,12 +243,23 @@ describe('PlatformDashboard', () => {
   });
 
   it('renders maintenance requests from API', async () => {
-    const maintenance: PlatformMaintenanceRequest[] = [
-      { id: 1, title: 'Leaking faucet', status: 'in_progress', submittedAt: new Date().toISOString(), unit: '42A' },
+    const maintenance: Partial<MaintenanceRequest>[] = [
+      {
+        id: 1,
+        title: 'Leaking faucet',
+        description: 'Bathroom faucet leaking',
+        status: 'IN_PROGRESS',
+        category: 'PLUMBING',
+        priority: 'HIGH',
+        unitNumber: '42A',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
     ];
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk([]);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchOk(maintenance);
       return fetchOk({});
@@ -207,6 +278,7 @@ describe('PlatformDashboard', () => {
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchErr(500);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -214,14 +286,17 @@ describe('PlatformDashboard', () => {
 
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
     });
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts.some(a => a.textContent?.includes('announcements'))).toBe(true);
   });
 
   it('shows error state when bookings fetch fails', async () => {
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk([]);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchErr(503);
       if (u.includes('/api/platform/maintenance')) return fetchOk([]);
       return fetchOk({});
@@ -229,14 +304,17 @@ describe('PlatformDashboard', () => {
 
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
     });
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts.some(a => a.textContent?.includes('bookings'))).toBe(true);
   });
 
   it('shows error state when maintenance fetch fails', async () => {
     (global.fetch as Mock).mockImplementation((url: RequestInfo | URL) => {
       const u = url.toString();
       if (u.includes('/api/platform/announcements')) return fetchOk([]);
+      if (u.includes('/api/platform/events')) return fetchOk([]);
       if (u.includes('/api/platform/bookings')) return fetchOk([]);
       if (u.includes('/api/platform/maintenance')) return fetchErr(502);
       return fetchOk({});
@@ -244,8 +322,10 @@ describe('PlatformDashboard', () => {
 
     renderDashboard();
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0);
     });
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts.some(a => a.textContent?.includes('requests'))).toBe(true);
   });
 
   // -- Section headings -----------------------------------------------------
@@ -255,7 +335,7 @@ describe('PlatformDashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('Recent Announcements')).toBeInTheDocument();
     });
-    expect(screen.getByText('My Upcoming Bookings')).toBeInTheDocument();
-    expect(screen.getByText('Recent Maintenance')).toBeInTheDocument();
+    expect(screen.getByText('My Bookings')).toBeInTheDocument();
+    expect(screen.getByText('Maintenance Requests')).toBeInTheDocument();
   });
 });

@@ -130,6 +130,10 @@ async function cleanupStaleUsers() {
 }
 
 async function start() {
+  if (process.env.NODE_ENV === 'production' && (process.env.TEST_USER || process.env.TEST_PASS)) {
+    throw new Error('FATAL: TEST_USER and TEST_PASS must not be set in production');
+  }
+
   await cleanupStaleUsers();
   await seedIfEmpty();
   await seedSnapshot();

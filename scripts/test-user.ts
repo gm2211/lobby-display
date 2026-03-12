@@ -4,14 +4,17 @@
  * Manages a deterministic test user in the local database for use by
  * Playwright screenshot scripts, dev workflows, and CI pipelines.
  *
+ * Creates both a public-schema User (role: ADMIN) and a platform-schema
+ * PlatformUser (role: MANAGER) so the test user has full access.
+ *
  * Subcommands:
  *   create  — Upserts the test user (idempotent)
  *   delete  — Removes the test user
  *   login   — Logs in via /api/auth/login and prints the session cookie
  *
  * Default credentials (overridable via env vars):
- *   Username: TEST_USER  (default: "test-admin")
- *   Password: TEST_PASS  (default: "test-admin-pass-2026")
+ *   Username: TEST_USER  (default: "admin")
+ *   Password: TEST_PASS  (default: "admin")
  *
  * Usage:
  *   DATABASE_URL="postgresql://..." npx tsx scripts/test-user.ts create
@@ -22,8 +25,13 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const TEST_USERNAME = process.env.TEST_USER ?? 'test-admin';
-const TEST_PASSWORD = process.env.TEST_PASS ?? 'test-admin-pass-2026';
+if (process.env.NODE_ENV === 'production') {
+  console.error('ABORT: test-user.ts must not run in production.');
+  process.exit(1);
+}
+
+const TEST_USERNAME = process.env.TEST_USER ?? 'admin';
+const TEST_PASSWORD = process.env.TEST_PASS ?? 'admin';
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
 const prisma = new PrismaClient();
@@ -44,7 +52,22 @@ async function create(): Promise<void> {
     },
   });
 
+  // Also create a PlatformUser (MANAGER role) so the test user has full platform access
+  const platformUser = await prisma.platformUser.upsert({
+    where: { userId: user.id },
+    update: { role: 'MANAGER' },
+    create: {
+      userId: user.id,
+      role: 'MANAGER',
+      preferences: {
+        displayName: 'Test Admin',
+        notifications: { email: false, push: false, announcements: false, maintenanceUpdates: false },
+      },
+    },
+  });
+
   console.log(`Test user upserted: ${user.username} (id=${user.id}, role=${user.role})`);
+  console.log(`PlatformUser upserted: ${platformUser.id} (role=${platformUser.role})`);
 }
 
 async function deleteUser(): Promise<void> {
@@ -55,8 +78,10 @@ async function deleteUser(): Promise<void> {
     return;
   }
 
+  // Delete PlatformUser first (FK constraint)
+  await prisma.platformUser.deleteMany({ where: { userId: existing.id } });
   await prisma.user.delete({ where: { username: TEST_USERNAME } });
-  console.log(`Test user "${TEST_USERNAME}" deleted.`);
+  console.log(`Test user "${TEST_USERNAME}" and associated PlatformUser deleted.`);
 }
 
 async function login(): Promise<void> {

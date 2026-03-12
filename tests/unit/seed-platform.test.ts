@@ -4,135 +4,20 @@
  * Tests verify that:
  * - Seed data structures are well-formed and match schema expectations
  * - All required fields are present
- * - Role counts match specification
  * - Settings, amenities, and announcements have valid shapes
  *
  * These tests run without a real database — they test data shape and
  * the exported seed data/config objects directly.
+ *
+ * Note: User seeding has been removed from seed-platform.ts.
+ * Users are now managed via scripts/test-user.ts.
  */
 import { describe, it, expect } from 'vitest';
 import {
-  ADMIN_USERS,
-  MANAGER_USERS,
-  BOARD_MEMBER_USERS,
-  RESIDENT_USERS,
   PLATFORM_SETTINGS,
   SAMPLE_AMENITIES,
   SAMPLE_ANNOUNCEMENTS,
 } from '../../prisma/seed-platform.js';
-import type { PlatformRole } from '@prisma/client';
-
-// ---------------------------------------------------------------------------
-// User data shape tests
-// ---------------------------------------------------------------------------
-
-describe('ADMIN_USERS', () => {
-  it('has exactly 1 admin user', () => {
-    expect(ADMIN_USERS).toHaveLength(1);
-  });
-
-  it('all entries have required fields', () => {
-    for (const u of ADMIN_USERS) {
-      expect(u.username).toBeTruthy();
-      expect(u.email).toBeTruthy();
-      expect(u.firstName).toBeTruthy();
-      expect(u.lastName).toBeTruthy();
-      expect(u.role).toBe('MANAGER' as PlatformRole); // platform role
-      expect(u.publicRole).toBe('ADMIN'); // public schema role
-    }
-  });
-
-  it('all emails are valid format', () => {
-    for (const u of ADMIN_USERS) {
-      expect(u.email).toMatch(/@/);
-    }
-  });
-});
-
-describe('MANAGER_USERS', () => {
-  it('has exactly 2 manager users', () => {
-    expect(MANAGER_USERS).toHaveLength(2);
-  });
-
-  it('all entries have required fields', () => {
-    for (const u of MANAGER_USERS) {
-      expect(u.username).toBeTruthy();
-      expect(u.email).toBeTruthy();
-      expect(u.firstName).toBeTruthy();
-      expect(u.lastName).toBeTruthy();
-      expect(u.role).toBe('MANAGER' as PlatformRole);
-      expect(u.unitNumber === undefined || typeof u.unitNumber === 'string').toBe(true);
-    }
-  });
-});
-
-describe('BOARD_MEMBER_USERS', () => {
-  it('has exactly 3 board member users', () => {
-    expect(BOARD_MEMBER_USERS).toHaveLength(3);
-  });
-
-  it('all entries have required fields', () => {
-    for (const u of BOARD_MEMBER_USERS) {
-      expect(u.username).toBeTruthy();
-      expect(u.email).toBeTruthy();
-      expect(u.firstName).toBeTruthy();
-      expect(u.lastName).toBeTruthy();
-      expect(u.role).toBe('BOARD_MEMBER' as PlatformRole);
-      expect(u.unitNumber).toBeTruthy(); // board members should have units
-    }
-  });
-});
-
-describe('RESIDENT_USERS', () => {
-  it('has exactly 5 resident users', () => {
-    expect(RESIDENT_USERS).toHaveLength(5);
-  });
-
-  it('all entries have required fields', () => {
-    for (const u of RESIDENT_USERS) {
-      expect(u.username).toBeTruthy();
-      expect(u.email).toBeTruthy();
-      expect(u.firstName).toBeTruthy();
-      expect(u.lastName).toBeTruthy();
-      expect(u.role).toBe('RESIDENT' as PlatformRole);
-      expect(u.unitNumber).toBeTruthy(); // residents must have unit numbers
-    }
-  });
-
-  it('all unit numbers are non-empty strings', () => {
-    for (const u of RESIDENT_USERS) {
-      expect(typeof u.unitNumber).toBe('string');
-      expect(u.unitNumber!.length).toBeGreaterThan(0);
-    }
-  });
-});
-
-describe('All platform users combined', () => {
-  const allUsers = [...ADMIN_USERS, ...MANAGER_USERS, ...BOARD_MEMBER_USERS, ...RESIDENT_USERS];
-
-  it('has 11 total users (1+2+3+5)', () => {
-    expect(allUsers).toHaveLength(11);
-  });
-
-  it('all usernames are unique', () => {
-    const usernames = allUsers.map((u) => u.username);
-    const unique = new Set(usernames);
-    expect(unique.size).toBe(usernames.length);
-  });
-
-  it('all emails are unique', () => {
-    const emails = allUsers.map((u) => u.email);
-    const unique = new Set(emails);
-    expect(unique.size).toBe(emails.length);
-  });
-
-  it('all entries have a password field for User record', () => {
-    for (const u of allUsers) {
-      expect(u.password).toBeTruthy();
-      expect(typeof u.password).toBe('string');
-    }
-  });
-});
 
 // ---------------------------------------------------------------------------
 // Platform settings tests
@@ -321,11 +206,6 @@ describe('seed function exports', () => {
   it('exports a default seedPlatform function', async () => {
     const module = await import('../../prisma/seed-platform.js');
     expect(typeof module.default).toBe('function');
-  });
-
-  it('exports seedUsers function', async () => {
-    const module = await import('../../prisma/seed-platform.js');
-    expect(typeof module.seedUsers).toBe('function');
   });
 
   it('exports seedSettings function', async () => {
