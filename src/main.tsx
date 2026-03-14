@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Metrics from './pages/Metrics';
-import ChatPage from './pages/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PlatformRouter from './platform/PlatformRouter';
 import PlatformProtectedRoute from './platform/PlatformProtectedRoute';
@@ -28,7 +27,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/metrics" element={<ProtectedRoute minRole="ADMIN"><Metrics /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute minRole="ADMIN"><ChatPage /></ProtectedRoute>} />
             <Route
               path="/platform/*"
               element={

@@ -12,8 +12,6 @@ export const seventy7HudsonTheme: TenantTheme = {
   faviconUrl: '/favicon.ico',
 
   welcomeMessage: 'Welcome to 77 Hudson. Here\'s your building at a glance.',
-  assistantGreeting: 'Ask me anything about 77 Hudson!',
-  assistantIntro: 'I\'m your 77 Hudson building assistant. I can help you with information about amenities, bookings, building rules, and more. What would you like to know?',
   loginBrandText: '77 Hudson',
   sidebarBrandText: '77 Hudson',
 
