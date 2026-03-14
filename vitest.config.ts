@@ -70,7 +70,7 @@ export default defineConfig({
           sequence: { concurrent: false },
           fileParallelism: false,
           env: {
-            DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/renzo_test',
+            DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/lobby_test',
           },
         },
       },

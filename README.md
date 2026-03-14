@@ -1,12 +1,10 @@
-# Renzo
+# Building Updates
 
 A digital signage dashboard for residential buildings. Displays real-time service status, upcoming events, and scrolling advisories on lobby screens.
 
 ## Deploy
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/gm2211/renzo)
-
-Click the button above. Render reads `render.yaml` and auto-provisions a PostgreSQL database and web service. The app seeds itself with demo data on first start. Free tier available (DB expires after 90 days).
+Render reads `render.yaml` and auto-provisions a PostgreSQL database and web service. The app seeds itself with demo data on first start. Free tier available (DB expires after 90 days).
 
 ### Admin Setup
 
@@ -14,13 +12,10 @@ The first time you visit `/admin`, you'll be prompted to create your admin accou
 
 There are three roles: **VIEWER** (read-only, for lobby screens), **EDITOR** (can manage content), and **ADMIN** (can manage users and content). The first account is always ADMIN.
 
-> [!WARNING]
-> The quick deploy button uses the repo as a public URL. This means **auto-deploy on push won't be available**. To get auto-deploy, fork the repo and connect it to Render via the full setup below.
-
 <details>
 <summary><strong>Full setup (enables auto-deploy)</strong></summary>
 
-1. **Fork this repo** — Click [Fork](https://github.com/gm2211/renzo/fork) to create your own copy
+1. **Fork this repo** to create your own copy
 2. **Connect GitHub to Render** — Go to [Render Dashboard](https://dashboard.render.com) and connect your GitHub account under Account Settings if you haven't already
 3. **Create a Blueprint** — Go to [New Blueprint](https://dashboard.render.com/select-repo?type=blueprint) and select your forked repo from the list (don't paste a URL)
 4. **Done** — Every push to `main` auto-tags and advances `deploy/staging`. Use `./promote.sh` to deploy a tag to prod

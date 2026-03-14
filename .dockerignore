@@ -1,8 +1,6 @@
 node_modules
-renzo-ai/node_modules
 dist
 dist-server
-renzo-ai/dist
 .git
 .worktrees
 .env*

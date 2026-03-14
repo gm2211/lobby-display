@@ -1,5 +1,5 @@
 /**
- * Type definitions for Renzo Dashboard entities.
+ * Type definitions for Building Updates entities.
  *
  * AI AGENT NOTES:
  * - All entities have `markedForDeletion` for the draft/publish workflow

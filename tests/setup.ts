@@ -5,7 +5,7 @@ import request from 'supertest';
 import type { TestAgent } from 'supertest';
 import app from '../server/app.js';
 
-const TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/renzo_test';
+const TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/lobby_test';
 
 // Set DATABASE_URL before any other module reads it
 process.env.DATABASE_URL = TEST_DB_URL;

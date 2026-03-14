@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 
-const TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/renzo_test';
+const TEST_DB_URL = 'postgresql://postgres:postgres@localhost:5432/lobby_test';
 
 function tryExec(cmd: string): boolean {
   try {
@@ -29,8 +29,8 @@ function runPsql(sql: string): boolean {
 
 export function setup() {
   // Recreate the test database
-  runPsql('DROP DATABASE IF EXISTS renzo_test;');
-  if (!runPsql('CREATE DATABASE renzo_test;')) {
+  runPsql('DROP DATABASE IF EXISTS lobby_test;');
+  if (!runPsql('CREATE DATABASE lobby_test;')) {
     console.warn(
       'Could not create test database. Make sure PostgreSQL is running locally or via docker compose.\n' +
       'Skipping DB creation — tests will fail if the database does not exist.'
@@ -46,5 +46,5 @@ export function setup() {
 }
 
 export function teardown() {
-  runPsql('DROP DATABASE IF EXISTS renzo_test;');
+  runPsql('DROP DATABASE IF EXISTS lobby_test;');
 }

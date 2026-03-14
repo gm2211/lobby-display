@@ -20,7 +20,7 @@ Run all three before pushing (if code changed):
 
 ```bash
 npx tsc --noEmit
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/renzo" npm run build
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lobby" npm run build
 npx vitest run
 ```
 

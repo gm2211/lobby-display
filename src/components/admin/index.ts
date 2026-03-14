@@ -26,5 +26,4 @@ export {
   EventsSection,
   AdvisoriesSection,
   UsersSection,
-  BrandingSection,
 } from './sections';
