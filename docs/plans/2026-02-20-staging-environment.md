@@ -74,7 +74,7 @@ git commit -m "feat: add Render build/start scripts with schema isolation suppor
 databases:
   - name: renzo-db
     plan: free
-    databaseName: renzo
+    databaseName: lobby
 
 services:
   # ── Production ──────────────────────────────────────────

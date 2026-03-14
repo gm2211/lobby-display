@@ -1,4 +1,4 @@
-# Renzo
+# Building Updates
 
 > Development patterns (admin sections, API routes, error handling, auto-scrolling) are in **[DEVELOPMENT.md](./DEVELOPMENT.md)**.
 
@@ -42,16 +42,6 @@ If you add a route, update README's structure and DEVELOPMENT.md's patterns. If 
 | Role-based access | GETs require auth only (any role). Mutations (POST/PUT/DELETE) require `EDITOR` or `ADMIN`. See `dashboardProtect` in `server/app.ts` |
 | CSRF | All state-changing `/api/*` requests require a CSRF token via `server/middleware/csrf.ts` |
 
-## Platform Gotchas
-
-| Trap | Rule |
-|------|------|
-| Platform schema isolation | Every new platform model **must** include `@@schema("platform")`. Omitting it puts the model in the `public` schema (dashboard), causing join failures. |
-| Platform CRUD uses UUID IDs | Platform routes use `String @id @default(uuid())` — **never** call `parseInt()` or `validateId()` on platform IDs. Use the raw string from `req.params.id`. |
-| Announcements use a custom router | `server/routes/platform/announcements.ts` is a custom router (not the factory) because it emits SSE events via `announcementNotifier`. Do not replace it with `createPlatformCrudRoutes` without adding back the SSE call. |
-| `BookingStatus` includes `WAITLISTED` | The `BookingStatus` enum has `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `COMPLETED`, **and `WAITLISTED`**. The booking rules engine checks capacity; if full, set status to `WAITLISTED` rather than rejecting outright. |
-| `platformProtectStrict` vs `platformProtect` | `platformProtect` only checks the session role. `platformProtectStrict` additionally loads the `PlatformUser` record and attaches it to `req.platformUser`. Use `platformProtectStrict` + `requirePlatformRole()` whenever the route needs to enforce platform-specific roles (RESIDENT, MANAGER, etc.). |
-
 ---
 
 ## Quality Gates
@@ -60,8 +50,8 @@ Run all three before pushing:
 
 ```bash
 npx tsc --noEmit
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/renzo" npm run build
-npx vitest run   # uses renzo_test DB automatically (see vitest.config.ts)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lobby" npm run build
+npx vitest run   # uses lobby_test DB automatically (see vitest.config.ts)
 ```
 
 ---
@@ -124,7 +114,7 @@ Monitor deploys after advancing a deploy branch (not after pushing to main):
 ### Staging
 
 - **Branch:** `deploy/staging` (auto-advanced on push to main)
-- **DB:** `renzo-staging-db` (separate free-tier Postgres)
+- **DB:** `lobby-staging-db` (separate free-tier Postgres)
 
 ```bash
 DATABASE_URL="<connection-string>" ./sync-data.sh  # Copy prod data to staging
@@ -174,7 +164,7 @@ Agents working on UI features MUST follow this loop:
 
 1. **Start the dev server** (if not already running):
    ```bash
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/renzo" npm run dev &
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lobby" npm run dev &
    curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/health
    ```
 

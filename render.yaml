@@ -1,11 +1,11 @@
 databases:
   - name: hudson-dashboard-db
     plan: basic-256mb
-    databaseName: renzo
+    databaseName: lobby
 
   - name: hudson-dashboard-staging-db
     plan: free
-    databaseName: renzo_staging
+    databaseName: lobby_staging
 
 services:
   # ── Production ──────────────────────────────────────────

@@ -2,18 +2,18 @@ import type { TenantTheme } from '../types';
 
 export const renzoDefaultTheme: TenantTheme = {
   id: 'renzo-default',
-  buildingName: 'Renzo',
-  portalTitle: 'Renzo Resident Portal',
+  buildingName: 'Building Updates',
+  portalTitle: 'Building Updates',
   dashboardTitle: 'Building Updates',
-  htmlTitle: 'Renzo',
+  htmlTitle: 'Building Updates',
 
   logoUrl: '/assets/themes/renzo-default/logo.png',
-  logoAlt: 'Renzo',
+  logoAlt: 'Building Updates',
   faviconUrl: '/favicon.ico',
 
   welcomeMessage: 'Welcome to your building portal',
-  loginBrandText: 'Renzo',
-  sidebarBrandText: 'Renzo',
+  loginBrandText: 'Building Updates',
+  sidebarBrandText: 'BU',
 
   colors: {
     // Primary slate blue palette

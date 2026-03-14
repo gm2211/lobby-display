@@ -4,8 +4,8 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$PROJECT_DIR"
 
-DB_CONTAINER="renzo-db"
-DB_NAME="renzo"
+DB_CONTAINER="lobby-db"
+DB_NAME="lobby"
 DB_USER="postgres"
 DB_PASS="postgres"
 DB_PORT="5432"

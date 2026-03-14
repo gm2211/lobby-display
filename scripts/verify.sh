@@ -48,7 +48,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HARNESS_DIR="$PROJECT_ROOT/.harness"
 REPORT_FILE="$HARNESS_DIR/verify-report.json"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/renzo}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/lobby}"
 
 # ---------------------------------------------------------------------------
 # Argument parsing

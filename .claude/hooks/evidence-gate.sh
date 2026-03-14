@@ -95,7 +95,7 @@ run_gates_for_ticket() {
   log "[evidence-gate] $ID: Running build..."
   local build_out
   local build_exit=0
-  build_out=$(cd "$PROJECT" && DATABASE_URL="postgresql://postgres:postgres@localhost:5432/renzo" npm run build 2>&1) || build_exit=$?
+  build_out=$(cd "$PROJECT" && DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lobby" npm run build 2>&1) || build_exit=$?
 
   if [[ $build_exit -eq 0 ]]; then
     log "[evidence-gate] $ID: build ... PASS"
