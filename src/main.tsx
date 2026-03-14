@@ -9,8 +9,6 @@ import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Metrics from './pages/Metrics';
 import ProtectedRoute from './components/ProtectedRoute';
-import PlatformRouter from './platform/PlatformRouter';
-import PlatformProtectedRoute from './platform/PlatformProtectedRoute';
 import './index.css';
 
 // Ping server every 10 min to prevent Render free tier spin-down
@@ -27,14 +25,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/metrics" element={<ProtectedRoute minRole="ADMIN"><Metrics /></ProtectedRoute>} />
-            <Route
-              path="/platform/*"
-              element={
-                <PlatformProtectedRoute minRole="VIEWER">
-                  <PlatformRouter />
-                </PlatformProtectedRoute>
-              }
-            />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
