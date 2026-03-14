@@ -164,7 +164,6 @@ model PlatformUser {
   forumThreads        ForumThread[]        @relation("ForumThreads")
   forumPosts          ForumPost[]          @relation("ForumPosts")
   marketplaceListings MarketplaceListing[] @relation("MarketplaceListings")
-  chatSessions        ChatSession[]        @relation("ChatSessions")
   postUpvotes         PostUpvote[]         @relation("PostUpvotes")
   shifts              Shift[]              @relation("ShiftAssignee")
   keyLogs             KeyLog[]             @relation("KeyLogPerformer")
@@ -942,42 +941,6 @@ model ListingImage {
   listing   MarketplaceListing  @relation(fields: [listingId], references: [id])
   url       String
   sortOrder Int                 @default(0)
-
-  @@schema("platform")
-}
-
-// ---------------------------------------------------------------------------
-// Chat models
-// ---------------------------------------------------------------------------
-
-enum ChatRole {
-  USER
-  ASSISTANT
-  SYSTEM
-
-  @@schema("platform")
-}
-
-model ChatSession {
-  id        String        @id @default(uuid())
-  userId    String
-  user      PlatformUser  @relation("ChatSessions", fields: [userId], references: [id])
-  title     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  messages  ChatMessage[]
-
-  @@schema("platform")
-}
-
-model ChatMessage {
-  id        String      @id @default(uuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id])
-  role      ChatRole
-  content   String
-  metadata  Json?
-  createdAt DateTime    @default(now())
 
   @@schema("platform")
 }

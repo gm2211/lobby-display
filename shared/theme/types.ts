@@ -10,8 +10,6 @@ export interface TenantTheme {
   faviconUrl: string;
 
   welcomeMessage: string;
-  assistantGreeting: string;
-  assistantIntro: string;
   loginBrandText: string;
   sidebarBrandText: string;
 

@@ -12,8 +12,6 @@ export const renzoDefaultTheme: TenantTheme = {
   faviconUrl: '/favicon.ico',
 
   welcomeMessage: 'Welcome to your building portal',
-  assistantGreeting: 'How can I help you today?',
-  assistantIntro: 'I\'m your building assistant. I can help with amenities, bookings, building rules, and more.',
   loginBrandText: 'Renzo',
   sidebarBrandText: 'Renzo',
 
