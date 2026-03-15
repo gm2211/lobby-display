@@ -7,7 +7,7 @@ import { ThemeProvider } from '../../src/theme/ThemeContext';
 function makeConfig(overrides: Partial<BuildingConfig> = {}): BuildingConfig {
   return {
     id: 1,
-    dashboardTitle: 'Renzo',
+    dashboardTitle: 'Building Updates',
     scrollSpeed: 30,
     tickerSpeed: 25,
     servicesScrollSpeed: 8,
@@ -30,7 +30,7 @@ describe('Header', () => {
 
   it('renders dashboard title', () => {
     renderHeader(makeConfig());
-    expect(screen.getByText('Renzo')).toBeInTheDocument();
+    expect(screen.getByText('Building Updates')).toBeInTheDocument();
   });
 
   it('shows default title when config is null', () => {

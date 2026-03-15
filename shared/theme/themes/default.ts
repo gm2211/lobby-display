@@ -1,13 +1,13 @@
 import type { TenantTheme } from '../types';
 
-export const renzoDefaultTheme: TenantTheme = {
-  id: 'renzo-default',
+export const defaultTheme: TenantTheme = {
+  id: 'default',
   buildingName: 'Building Updates',
   portalTitle: 'Building Updates',
   dashboardTitle: 'Building Updates',
   htmlTitle: 'Building Updates',
 
-  logoUrl: '/assets/themes/renzo-default/logo.png',
+  logoUrl: '/assets/themes/default/logo.png',
   logoAlt: 'Building Updates',
   faviconUrl: '/favicon.ico',
 

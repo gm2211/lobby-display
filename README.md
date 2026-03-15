@@ -38,22 +38,6 @@ npx prisma db push
 npm run dev
 ```
 
-### Reference Screenshots (optional)
-
-If you have the product spec ZIP (`cc-product-spec.zip`), you can extract it for use as a local visual reference when implementing UI features:
-
-```bash
-# Place the zip in the project root, then run:
-./scripts/extract-spec.sh
-
-# Or pass the path explicitly:
-./scripts/extract-spec.sh /path/to/cc-product-spec.zip
-```
-
-This extracts screenshots into `docs/platform-spec/screenshots/` and copies any source markdown into `docs/platform-spec/screenshots/source-spec.md`.
-Everything under `docs/platform-spec/screenshots/` is gitignored for local reference only.
-The maintained, tracked spec is `docs/platform-spec/spec.md`.
-
 - **Dashboard** (lobby display): http://localhost:3000
 - **Admin panel**: http://localhost:3000/admin
 
@@ -69,10 +53,8 @@ server/
   sse.ts              # Server-sent events for real-time updates (global + named channels)
   constants.ts        # Server-side defaults (scroll speeds)
   routes/             # REST API endpoints (services, events, advisories, config, snapshots, auth, users)
-  routes/platform/    # Platform API sub-routes (announcements, bookings, amenities, …)
-  middleware/         # errorHandler (400/404/500), auth (401/403, roles), csrf, platformAuth
-  utils/              # CRUD route factory, platform CRUD factory, storage abstraction, Prisma session store
-  services/           # bookingRules (validation engine), announcementNotifier (SSE)
+  middleware/         # errorHandler (400/404/500), auth (401/403, roles), csrf
+  utils/              # CRUD route factory, storage abstraction, Prisma session store
 src/
   pages/
     Dashboard.tsx     # Lobby display (auto-scroll, real-time)
@@ -86,61 +68,13 @@ src/
   types.ts            # TypeScript interfaces
   utils/              # API client, markdown parser, timeAgo
 prisma/
-  schema.prisma       # Data models (public schema: Service, Event, …; platform schema: Booking, Amenity, …)
-  seed-platform.ts    # Platform demo data (amenities, platform users, etc.)
+  schema.prisma       # Data models (Service, Event, Advisory, BuildingConfig, etc.)
 tests/
   api/                # API + DB integration tests
   component/          # React component tests (jsdom)
   unit/               # Pure unit tests (apiClient, markdown, timeAgo)
 scripts/              # Render build/start scripts
 ```
-
-## Platform API
-
-The platform layer provides a resident-facing REST API at `/api/platform/*`, built on top of the dashboard's auth and database infrastructure.
-
-### API Routes
-
-All routes require authentication (session cookie). Mutations (POST/PUT/DELETE) require at least `EDITOR` role unless gated by a platform-specific role check.
-
-| Route prefix | Description |
-|---|---|
-| `/api/platform/announcements` | Building announcements |
-| `/api/platform/amenities` | Amenity listings |
-| `/api/platform/bookings` | Amenity booking requests |
-| `/api/platform/maintenance` | Maintenance requests |
-| `/api/platform/parcels` | Parcel / package management |
-| `/api/platform/visitors` | Visitor management |
-| `/api/platform/payments` | Payment records |
-| `/api/platform/violations` | Violation records |
-| `/api/platform/events` | Platform events |
-| `/api/platform/surveys` | Surveys and responses |
-| `/api/platform/consent` | E-consent forms |
-| `/api/platform/documents` | Document management |
-| `/api/platform/marketplace` | Resident marketplace |
-| `/api/platform/directory` | Building directory |
-| `/api/platform/forum` | Resident forum |
-| `/api/platform/training` | Training courses |
-| `/api/platform/uploads` | File uploads |
-| `/api/platform/search` | Global search |
-| `/api/platform/users` | Platform user management |
-| `/api/platform/nav` | Navigation config |
-
-### Platform Services
-
-| Service | File | Purpose |
-|---------|------|---------|
-| Booking rules engine | `server/services/bookingRules.ts` | Validates amenity bookings (capacity, blackout dates, role restrictions, advance notice) |
-| Announcement notifier | `server/services/announcementNotifier.ts` | Broadcasts SSE events on new announcements |
-| Storage abstraction | `server/utils/storage.ts` | Pluggable file upload (`local` or `s3` via `STORAGE_PROVIDER` env var) |
-
-### Platform Seed Data
-
-```bash
-npm run seed:platform   # Populate platform tables with demo data (amenities, users, etc.)
-```
-
-Source: `prisma/seed-platform.ts`.
 
 ## Development
 
@@ -150,14 +84,7 @@ Source: `prisma/seed-platform.ts`.
 npm test              # Run tests (needs Postgres running)
 npm run test:watch    # Run tests in watch mode
 npm run e2e:local     # Run Playwright suite locally (requires E2E_* creds)
-npm run e2e:spec-eval:local   # Run spec-derived platform evals only
 ```
-
-Spec-to-eval methodology and references: `docs/spec-eval-playbook.md`.
-Canonical platform spec: `docs/platform-spec/spec.md`.
-Spec-eval runs also generate:
-- `e2e/spec-eval-results.json` (raw run report)
-- `e2e/spec-eval-scorecard.json` (per-spec-section scorecard + framework error summary)
 
 ### Database Changes
 

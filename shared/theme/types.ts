@@ -30,7 +30,7 @@ export interface TenantTheme {
 }
 
 export interface ThemeColors {
-  // Primary palette (maps to --platform-color-primary-*)
+  // Primary palette (maps to --theme-color-primary-*)
   primary50: string;
   primary100: string;
   primary200: string;
@@ -42,7 +42,7 @@ export interface ThemeColors {
   primary800: string;
   primary900: string;
 
-  // Secondary palette (maps to --platform-color-secondary-*)
+  // Secondary palette (maps to --theme-color-secondary-*)
   secondary50: string;
   secondary100: string;
   secondary200: string;
