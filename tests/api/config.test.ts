@@ -37,7 +37,7 @@ describe('Config API', () => {
   it('PUT /api/config updates existing config', async () => {
     const agent = await authenticatedAgent();
     await testPrisma.buildingConfig.create({
-      data: { dashboardTitle: 'Renzo' },
+      data: { dashboardTitle: 'Old Title' },
     });
 
     const res = await agent

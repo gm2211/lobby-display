@@ -39,7 +39,7 @@ async function seedTestData() {
   });
 
   await testPrisma.buildingConfig.create({
-    data: { dashboardTitle: 'Renzo' },
+    data: { dashboardTitle: 'Building Updates' },
   });
 }
 
@@ -68,7 +68,7 @@ describe('Snapshots API', () => {
       expect(res.body.state.events).toHaveLength(2);
       expect(res.body.state.advisories).toHaveLength(1);
       expect(res.body.state.config).toBeDefined();
-      expect(res.body.state.config.dashboardTitle).toBe('Renzo');
+      expect(res.body.state.config.dashboardTitle).toBe('Building Updates');
     });
 
     it('publishing hard-deletes items marked for deletion', async () => {
@@ -125,7 +125,7 @@ describe('Snapshots API', () => {
       expect(Array.isArray(res.body.events)).toBe(true);
       expect(Array.isArray(res.body.advisories)).toBe(true);
       expect(res.body.config).toBeDefined();
-      expect(res.body.config.dashboardTitle).toBe('Renzo');
+      expect(res.body.config.dashboardTitle).toBe('Building Updates');
       expect(res.body.config.scrollSpeed).toBeDefined();
       expect(res.body.config.tickerSpeed).toBeDefined();
       expect(res.body.config.servicesScrollSpeed).toBeDefined();
@@ -162,7 +162,7 @@ describe('Snapshots API', () => {
         services: [{ id: 1, name: 'HVAC', status: 'Operational', sortOrder: 0 }],
         events: [{ id: 1, title: 'Yoga', subtitle: 'Sub', details: ['d1'], sortOrder: 0 }],
         advisories: [{ id: 1, message: 'Test', active: true }],
-        config: { dashboardTitle: 'Renzo' },
+        config: { dashboardTitle: 'Building Updates' },
       };
 
       await testPrisma.publishedSnapshot.create({
@@ -175,7 +175,7 @@ describe('Snapshots API', () => {
       expect(res.body.services).toHaveLength(1);
       expect(res.body.events).toHaveLength(1);
       expect(res.body.advisories).toHaveLength(1);
-      expect(res.body.config.dashboardTitle).toBe('Renzo');
+      expect(res.body.config.dashboardTitle).toBe('Building Updates');
     });
   });
 

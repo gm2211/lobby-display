@@ -60,7 +60,7 @@ describe('SSE Channel Extension', () => {
 
     it('registers a client with a specific channel via query param', async () => {
       const { sseHandler } = await import('../../server/sse.js');
-      const req = mockRequest({ channel: 'platform:announcements' });
+      const req = mockRequest({ channel: 'dashboard:updates' });
       const res = mockResponse();
 
       sseHandler(req, res);
@@ -76,9 +76,9 @@ describe('SSE Channel Extension', () => {
 
       const req1 = mockRequest(); // no channel
       const res1 = mockResponse();
-      const req2 = mockRequest({ channel: 'platform:announcements' });
+      const req2 = mockRequest({ channel: 'dashboard:updates' });
       const res2 = mockResponse();
-      const req3 = mockRequest({ channel: 'platform:maintenance' });
+      const req3 = mockRequest({ channel: 'dashboard:advisories' });
       const res3 = mockResponse();
 
       sseHandler(req1, res1);
@@ -98,17 +98,17 @@ describe('SSE Channel Extension', () => {
 
       const req1 = mockRequest(); // global subscriber (no channel)
       const res1 = mockResponse();
-      const req2 = mockRequest({ channel: 'platform:announcements' });
+      const req2 = mockRequest({ channel: 'dashboard:updates' });
       const res2 = mockResponse();
-      const req3 = mockRequest({ channel: 'platform:maintenance' });
+      const req3 = mockRequest({ channel: 'dashboard:advisories' });
       const res3 = mockResponse();
 
       sseHandler(req1, res1);
       sseHandler(req2, res2);
       sseHandler(req3, res3);
 
-      // broadcast to 'platform:announcements' channel only
-      broadcast('platform:announcements');
+      // broadcast to 'dashboard:updates' channel only
+      broadcast('dashboard:updates');
 
       expect(res2.write).toHaveBeenCalledWith('data: refresh\n\n');
       // global subscriber and maintenance subscriber should NOT receive
@@ -116,18 +116,18 @@ describe('SSE Channel Extension', () => {
       expect(res3.write).not.toHaveBeenCalled();
     });
 
-    it('broadcasts only to subscribers of platform:maintenance channel', async () => {
+    it('broadcasts only to subscribers of dashboard:advisories channel', async () => {
       const { sseHandler, broadcast } = await import('../../server/sse.js');
 
-      const req1 = mockRequest({ channel: 'platform:announcements' });
+      const req1 = mockRequest({ channel: 'dashboard:updates' });
       const res1 = mockResponse();
-      const req2 = mockRequest({ channel: 'platform:maintenance' });
+      const req2 = mockRequest({ channel: 'dashboard:advisories' });
       const res2 = mockResponse();
 
       sseHandler(req1, res1);
       sseHandler(req2, res2);
 
-      broadcast('platform:maintenance');
+      broadcast('dashboard:advisories');
 
       expect(res2.write).toHaveBeenCalledWith('data: refresh\n\n');
       expect(res1.write).not.toHaveBeenCalled();
@@ -136,19 +136,19 @@ describe('SSE Channel Extension', () => {
     it('does not error when broadcasting to a channel with no subscribers', async () => {
       const { sseHandler, broadcast } = await import('../../server/sse.js');
 
-      const req1 = mockRequest({ channel: 'platform:announcements' });
+      const req1 = mockRequest({ channel: 'dashboard:updates' });
       const res1 = mockResponse();
       sseHandler(req1, res1);
 
       // No subscribers for this channel
-      expect(() => broadcast('platform:maintenance')).not.toThrow();
+      expect(() => broadcast('dashboard:advisories')).not.toThrow();
       expect(res1.write).not.toHaveBeenCalled();
     });
 
     it('broadcasts nothing when channel is specified but no clients are connected', async () => {
       const { broadcast } = await import('../../server/sse.js');
       // No clients registered
-      expect(() => broadcast('platform:announcements')).not.toThrow();
+      expect(() => broadcast('dashboard:updates')).not.toThrow();
     });
   });
 
@@ -156,7 +156,7 @@ describe('SSE Channel Extension', () => {
     it('removes client from channel subscription on connection close', async () => {
       const { sseHandler, broadcast } = await import('../../server/sse.js');
 
-      const req = mockRequest({ channel: 'platform:announcements' });
+      const req = mockRequest({ channel: 'dashboard:updates' });
       const res = mockResponse();
       sseHandler(req, res);
 
@@ -166,7 +166,7 @@ describe('SSE Channel Extension', () => {
       // clear the mock call count after disconnect
       vi.mocked(res.write).mockClear();
 
-      broadcast('platform:announcements');
+      broadcast('dashboard:updates');
       expect(res.write).not.toHaveBeenCalled();
     });
 
@@ -210,18 +210,18 @@ describe('SSE Channel Extension', () => {
     it('delivers to all subscribers of the same channel', async () => {
       const { sseHandler, broadcast } = await import('../../server/sse.js');
 
-      const req1 = mockRequest({ channel: 'platform:announcements' });
+      const req1 = mockRequest({ channel: 'dashboard:updates' });
       const res1 = mockResponse();
-      const req2 = mockRequest({ channel: 'platform:announcements' });
+      const req2 = mockRequest({ channel: 'dashboard:updates' });
       const res2 = mockResponse();
-      const req3 = mockRequest({ channel: 'platform:announcements' });
+      const req3 = mockRequest({ channel: 'dashboard:updates' });
       const res3 = mockResponse();
 
       sseHandler(req1, res1);
       sseHandler(req2, res2);
       sseHandler(req3, res3);
 
-      broadcast('platform:announcements');
+      broadcast('dashboard:updates');
 
       expect(res1.write).toHaveBeenCalledWith('data: refresh\n\n');
       expect(res2.write).toHaveBeenCalledWith('data: refresh\n\n');

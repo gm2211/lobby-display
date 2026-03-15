@@ -20,8 +20,6 @@ export default defineConfig({
           globals: true,
           include: [
             'tests/unit/**/*.test.ts',
-            // Epic 2 integration tests use mocked Prisma (same pattern as unit tests)
-            'tests/api/platform/epic2-integration.test.ts',
           ],
         },
       },
@@ -62,7 +60,6 @@ export default defineConfig({
           name: 'api',
           globals: true,
           include: ['tests/api/**/*.test.ts'],
-          exclude: ['tests/api/platform/epic2-integration.test.ts'],
           globalSetup: ['./tests/globalSetup.ts'],
           setupFiles: ['./tests/setup.ts'],
           testTimeout: 15000,
