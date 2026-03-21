@@ -13,10 +13,7 @@
     "e2e": "playwright test --config=e2e/playwright.config.ts",
     "e2e:local": "E2E_BASE_URL=http://localhost:3000 playwright test --config=e2e/playwright.config.ts",
     "e2e:staging": "E2E_BASE_URL=https://seven7-hudson-staging.onrender.com playwright test --config=e2e/playwright.config.ts",
-    "e2e:spec-eval:local": "RUN_SPEC_EVAL=1 E2E_BASE_URL=http://127.0.0.1:3000 node scripts/run-spec-eval.mjs",
-    "e2e:spec-eval:staging": "RUN_SPEC_EVAL=1 E2E_BASE_URL=https://seven7-hudson-staging.onrender.com node scripts/run-spec-eval.mjs",
     "e2e:report": "playwright show-report e2e/playwright-report",
-    "seed:platform": "tsx prisma/seed-platform.ts",
     "test:user:create": "tsx scripts/test-user.ts create",
     "test:user:delete": "tsx scripts/test-user.ts delete",
     "screenshot:compare": "tsx scripts/screenshot-compare.ts"
@@ -25,6 +22,7 @@
     "@fastify/express": "^4.0.4",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
+    "esbuild-wasm": "^0.25.0",
     "express": "^4.21.0",
     "express-session": "^1.19.0",
     "fastify": "^5.8.2",

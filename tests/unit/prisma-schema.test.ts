@@ -13,8 +13,8 @@ describe('Prisma schema multiSchema setup', () => {
   });
 
   describe('datasource block', () => {
-    it('has schemas array with public and platform', () => {
-      expect(schema).toMatch(/schemas\s*=\s*\["public",\s*"platform"\]/);
+    it('has schemas array with public', () => {
+      expect(schema).toMatch(/schemas\s*=\s*\["public"\]/);
     });
   });
 
