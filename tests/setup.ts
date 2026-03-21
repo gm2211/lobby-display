@@ -19,65 +19,13 @@ beforeEach(async () => {
   // Clean all tables before each test (children before parents to satisfy FK constraints)
   await testPrisma.publishedSnapshot.deleteMany();
   await testPrisma.session.deleteMany();
-
-  // Platform schema — leaf/child tables first
-  await testPrisma.chatMessage.deleteMany();
-  await testPrisma.chatSession.deleteMany();
-  await testPrisma.listingImage.deleteMany();
-  await testPrisma.marketplaceListing.deleteMany();
-  await testPrisma.postUpvote.deleteMany();
-  await testPrisma.forumPost.deleteMany();
-  await testPrisma.forumThread.deleteMany();
-  await testPrisma.forumCategory.deleteMany();
-  await testPrisma.announcementRead.deleteMany();
-  await testPrisma.announcement.deleteMany();
-  await testPrisma.directoryEntry.deleteMany();
-  await testPrisma.surveyResponse.deleteMany();
-  await testPrisma.surveyQuestion.deleteMany();
-  await testPrisma.survey.deleteMany();
-  await testPrisma.consentSignature.deleteMany();
-  await testPrisma.consentForm.deleteMany();
-  await testPrisma.trainingCompletion.deleteMany();
-  await testPrisma.paymentItem.deleteMany();
-  await testPrisma.payment.deleteMany();
-  await testPrisma.bookingPayment.deleteMany();
-  await testPrisma.booking.deleteMany();
-  await testPrisma.violationComment.deleteMany();
-  await testPrisma.violation.deleteMany();
-  await testPrisma.eventRSVP.deleteMany();
-  await testPrisma.platformEvent.deleteMany();
-  await testPrisma.documentVersion.deleteMany();
-  await testPrisma.document.deleteMany();
-  await testPrisma.documentCategory.deleteMany();
-  await testPrisma.searchIndex.deleteMany();
-  await testPrisma.upload.deleteMany();
-  // Maintenance tables (delete children before parents due to FK constraints)
-  await testPrisma.maintenancePhoto.deleteMany();
-  await testPrisma.maintenanceComment.deleteMany();
-  await testPrisma.maintenanceRequest.deleteMany();
-  // Visitor tables (delete children before parents due to FK constraints)
-  await testPrisma.visitorLog.deleteMany();
-  await testPrisma.visitor.deleteMany();
-  // ChatMessage → ChatSession → PlatformUser — must be deleted in order
-  await testPrisma.chatMessage.deleteMany();
-  await testPrisma.chatSession.deleteMany();
-  // PlatformUser must be deleted before User (no cascade)
-  await testPrisma.platformUser.deleteMany();
+  await testPrisma.serviceStatusLog.deleteMany();
   await testPrisma.message.deleteMany();
   await testPrisma.user.deleteMany();
-
-  // Amenity platform tables
-  await testPrisma.amenityImage.deleteMany();
-  await testPrisma.amenityRule.deleteMany();
-  await testPrisma.amenity.deleteMany();
-
-  // Other standalone tables
-  await testPrisma.platformSetting.deleteMany();
   await testPrisma.service.deleteMany();
   await testPrisma.event.deleteMany();
   await testPrisma.advisory.deleteMany();
   await testPrisma.buildingConfig.deleteMany();
-  await testPrisma.parcel.deleteMany();
 });
 
 const TEST_ADMIN = { username: 'testadmin', password: 'testpassword123' };
