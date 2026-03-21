@@ -138,10 +138,29 @@ async function start() {
   await seedIfEmpty();
   await seedSnapshot();
 
+  // --- Static asset auth gate ---
+  // Serve the standalone login page without auth; gate JS bundles behind a session.
+  const loginHtmlPath = path.resolve(__dirname, 'login.html');
+
+  app.get('/login', (req, res) => {
+    if (req.session?.user) return res.redirect('/');
+    res.sendFile(loginHtmlPath);
+  });
+
+  // Block JS bundles for unauthenticated users (prevents route/API enumeration)
+  app.use('/assets', (req, res, next) => {
+    if (req.path.endsWith('.js') && !req.session?.user) {
+      return res.redirect('/login');
+    }
+    next();
+  });
+
   if (isProd) {
     const distPath = path.resolve(__dirname, '../dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    // SPA catch-all: require auth, otherwise redirect to standalone login
+    app.get('*', (req, res) => {
+      if (!req.session?.user) return res.redirect('/login');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {

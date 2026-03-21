@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "prisma generate && prisma db push && tsx watch server/index.ts",
     "build": "prisma generate && prisma db push && vite build && npm run build:server",
-    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outdir=dist-server --packages=external",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outdir=dist-server --packages=external && cp server/login.html dist-server/login.html",
     "start": "NODE_ENV=production node dist-server/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
