@@ -29,10 +29,11 @@ services:
   # ── Staging ─────────────────────────────────────────────
   - type: web
     name: 77-hudson-staging
-    runtime: docker
+    runtime: node
     plan: free
     branch: deploy/staging
-    dockerfilePath: ./Dockerfile.staging
+    buildCommand: bash scripts/render-build.sh
+    startCommand: bash scripts/render-start.sh
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -42,9 +43,3 @@ services:
         value: production
       - key: COOKIE_SECRET
         generateValue: true
-      - key: CC_EMAIL
-        sync: false
-      - key: CC_PASSWORD
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
