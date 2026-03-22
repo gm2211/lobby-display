@@ -1,11 +1,26 @@
-node_modules
-.idea
-.env
+# Build output
 dist
 dist-server
+build-version.json
+
+# Dependencies
+node_modules
+
+# Environment & secrets
+.env
+.env.e2e
+
+# IDE
+.idea
+
+# Prisma
 /generated/prisma
 prisma/test.db*
-.worktrees/
+
+# Auth state
+.auth/
+
+# E2E / Playwright
 e2e/playwright-report/
 e2e/test-results/
 e2e/test-results.json
@@ -13,18 +28,24 @@ e2e/spec-eval-results.json
 e2e/spec-eval-scorecard.json
 e2e/e2e/
 e2e/.auth/
-.auth/
-.env.e2e
-build-version.json
-cc-product-spec.zip
 
-# Test harness runtime artifacts
+# Test harness
 .harness/
 capture/
 
 # Claude
 .claude/settings.local.json
+.claude/worktrees
+.worktrees/
 
-# Dolt database files (added by bd init)
+# Specify
+.specify/compare
+
+# Tooling
+.deploy-watch.cache.json
+.mcp.json
+cc-product-spec.zip
+
+# Dolt database files
 .dolt/
 *.db
