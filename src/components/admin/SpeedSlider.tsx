@@ -57,7 +57,7 @@ const sliderCSS = `
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #1a5c5a;
+    background: var(--theme-color-primary-500);
     cursor: pointer;
     border-width: 1px;
     border-style: solid;
@@ -65,13 +65,13 @@ const sliderCSS = `
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   }
   .speed-slider-range::-webkit-slider-thumb:hover {
-    background: #0f3d3b;
+    background: var(--theme-color-primary-700);
   }
   .speed-slider-range::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #1a5c5a;
+    background: var(--theme-color-primary-500);
     cursor: pointer;
     border-width: 1px;
     border-style: solid;
@@ -79,7 +79,7 @@ const sliderCSS = `
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   }
   .speed-slider-range::-moz-range-thumb:hover {
-    background: #0f3d3b;
+    background: var(--theme-color-primary-700);
   }
   .speed-slider-range::-moz-range-track {
     height: 6px;
@@ -99,7 +99,7 @@ export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
 
   // Compute background gradient for webkit (filled portion)
   const pct = (localSpeed / 60) * 100;
-  const trackBackground = `linear-gradient(to right, #1a5c5a ${pct}%, #ddd ${pct}%)`;
+  const trackBackground = `linear-gradient(to right, var(--theme-color-primary-500) ${pct}%, #ddd ${pct}%)`;
 
   const ticks = Array.from({ length: 13 }, (_, i) => i * 5); // 0, 5, 10, ... 60
 

@@ -70,6 +70,11 @@ model BuildingConfig {
   timezone             String @default("America/New_York")
   logoUrl              String @default("")
   customLogos          String @default("[]")
+  themePreset          String @default("")
+  fontFamily           String @default("")
+  fontScale            Int    @default(100)
+  colorPrimary         String @default("")
+  colorSecondary       String @default("")
 
   @@schema("public")
 }

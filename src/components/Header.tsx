@@ -38,7 +38,7 @@ export default function Header({ config }: { config: BuildingConfig | null }) {
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
-    background: 'linear-gradient(135deg, #1a5c5a 0%, #0f3d3b 100%)',
+    background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)',
     padding: '14px 28px',
     display: 'flex',
     justifyContent: 'space-between',

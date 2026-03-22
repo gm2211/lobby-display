@@ -90,7 +90,7 @@ export default function AdvisoryTicker({ advisories, tickerSpeed = DEFAULTS.TICK
 
 const styles: Record<string, React.CSSProperties> = {
   ticker: {
-    background: COLORS.ADVISORY_BG,
+    background: 'var(--theme-color-secondary-400)',
     flexShrink: 0,
     overflow: 'hidden',
   },

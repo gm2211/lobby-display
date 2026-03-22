@@ -157,7 +157,7 @@ export function ServicesSection({
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
       <h2 style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         Services
-        {hasChanged && <span style={{ color: '#b07800', fontSize: '12px' }}>●</span>}
+        {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
       </h2>
 
       {/* Add Service Form */}
@@ -417,7 +417,7 @@ export function ServicesSection({
                       title={s.notes || 'Click to add note'}
                     >
                       {s.notes || '+ note'}
-                      {notesChanged && <span style={{ color: '#b07800', marginLeft: '4px' }}>*</span>}
+                      {notesChanged && <span style={{ color: 'var(--theme-color-secondary-600)', marginLeft: '4px' }}>*</span>}
                     </span>
                   )}
                 </div>

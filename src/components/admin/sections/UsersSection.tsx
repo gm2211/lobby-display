@@ -3,7 +3,7 @@ import type { AuthUser } from '../../../types';
 import { api } from '../../../utils/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  inputStyle, sectionStyle, formGroupStyle, formLabelStyle,
+  inputStyle, selectStyle, sectionStyle, formGroupStyle, formLabelStyle,
 } from '../../../styles';
 
 interface UserWithId extends AuthUser {
@@ -190,7 +190,7 @@ export function UsersSection() {
       {/* Add new user */}
       <div style={formGroupStyle}>
         <span style={formLabelStyle}>Add User</span>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <input
             style={{ ...inputStyle, flex: 1, minWidth: '120px' }}
             placeholder="Username"
@@ -205,13 +205,13 @@ export function UsersSection() {
             onChange={e => setNewPassword(e.target.value)}
           />
           <select
-            style={{ ...styles.select, padding: '8px 12px' }}
+            style={{ ...selectStyle, minWidth: '100px' }}
             value={newRole}
             onChange={e => setNewRole(e.target.value)}
           >
             {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
-          <button style={styles.addBtn} onClick={handleCreate}>Add</button>
+          <button style={{ ...styles.addBtn, alignSelf: 'stretch' }} onClick={handleCreate}>Add</button>
         </div>
       </div>
     </section>
@@ -266,7 +266,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   saveBtn: {
-    background: '#1565c0',
+    background: 'var(--theme-color-primary-500)',
     borderWidth: '0px',
     borderStyle: 'solid',
     borderColor: 'transparent',
@@ -289,10 +289,10 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   addBtn: {
-    background: '#1a5c5a',
-    borderWidth: '0px',
+    background: 'var(--theme-color-primary-500)',
+    borderWidth: '1px',
     borderStyle: 'solid',
-    borderColor: 'transparent',
+    borderColor: 'var(--theme-color-primary-700)',
     borderRadius: '6px',
     color: '#fff',
     fontSize: '13px',

@@ -11,4 +11,5 @@ export const DEFAULT_FONTS = {
   NOTES_FONT_SIZE: 18,
   NOTES_FONT_WEIGHT: 700,
   TITLE_FONT_SIZE: 20,
+  FONT_SCALE: 100,
 } as const;

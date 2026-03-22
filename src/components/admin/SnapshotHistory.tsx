@@ -138,7 +138,7 @@ export function SnapshotHistory({ onRestore, onItemRestore }: SnapshotHistoryPro
               onClick={() => loadDiff(s.version)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontWeight: 600, color: '#1a5c5a' }}>v{s.version}</span>
+                <span style={{ fontWeight: 600, color: 'var(--theme-color-primary-500)' }}>v{s.version}</span>
                 <span style={{ color: '#888', fontSize: '13px' }}>
                   {new Date(s.publishedAt).toLocaleString('en-US', {
                     month: 'short',
@@ -530,7 +530,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: '50%',
     transform: 'translateY(-50%)',
-    background: 'rgba(26, 92, 90, 0.85)',
+    background: 'color-mix(in srgb, var(--theme-color-primary-500) 85%, transparent)',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -549,7 +549,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
   },
   snapshotRow: {
     display: 'flex',

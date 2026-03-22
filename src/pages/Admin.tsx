@@ -6,12 +6,15 @@ import { smallBtn, headerBtn, headerBtnSecondary, modalOverlay, modal } from '..
 import {
   SnapshotHistory,
   ConfigSection,
+  AppearanceSection,
   ServicesSection,
   EventsSection,
   AdvisoriesSection,
   UsersSection,
 } from '../components/admin';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
+import { RuntimeThemeOverride } from '../theme/RuntimeThemeOverride';
 
 type SectionChanges = {
   config: boolean;
@@ -29,6 +32,7 @@ type PublishedData = {
 
 export default function Admin() {
   const { user, logout } = useAuth();
+  const theme = useTheme();
   const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -146,10 +150,16 @@ export default function Admin() {
 
   return (
     <div style={{ ...styles.pageWrap, ...pendingBgStyle }}>
-      <header className="admin-header" style={{ ...styles.header, position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: `${config?.titleFontSize ?? 20}px`, fontWeight: 400 }}>{config?.dashboardTitle || 'Building Updates'}</h1>
-          {hasChanges && <span style={{ color: '#ffd54f', fontSize: '13px' }}>● Unpublished changes</span>}
+      <RuntimeThemeOverride config={published?.config || null} />
+      <header className="admin-header" style={{ ...styles.header, background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {(published?.config?.logoUrl || theme.logoUrl) && (
+            <img src={published?.config?.logoUrl || theme.logoUrl} alt="" style={{ height: '32px', width: 'auto' }} />
+          )}
+          <div style={{ position: 'relative' }}>
+            <h1 style={{ margin: 0, color: '#fff', fontSize: `${config?.titleFontSize ?? 20}px`, fontWeight: 400, lineHeight: 1.3 }}>{config?.dashboardTitle || 'Building Updates'}</h1>
+            {hasChanges && <span style={{ color: 'var(--theme-color-secondary-300)', fontSize: '10px', position: 'absolute', bottom: '-14px', left: 0, whiteSpace: 'nowrap' }}>● Unpublished changes</span>}
+          </div>
         </div>
         <div className="admin-header-buttons" style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center', flex: 2 }}>
           <button
@@ -194,6 +204,7 @@ export default function Admin() {
 
       <div className="admin-page" style={styles.page}>
         <ConfigSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
+        <AppearanceSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
         <ServicesSection services={services} config={config} onSave={onSave} hasChanged={sectionChanges.services} publishedServices={published?.services || null} />
         <EventsSection events={events} config={config} onSave={onSave} hasChanged={sectionChanges.events} publishedEvents={published?.events || null} />
         <AdvisoriesSection advisories={advisories} config={config} onSave={onSave} hasChanged={sectionChanges.advisories} publishedAdvisories={published?.advisories || null} />
@@ -260,12 +271,12 @@ export default function Admin() {
  */
 const styles: Record<string, React.CSSProperties> = {
   pageWrap: { background: '#f5f7fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  page: { maxWidth: '960px', width: '100%', margin: '0 auto', padding: '28px 24px', color: '#333', fontFamily: 'Nunito, sans-serif', boxSizing: 'border-box', flex: 1 },
+  page: { maxWidth: '960px', width: '100%', margin: '0 auto', padding: '28px 24px', color: '#333', fontFamily: 'var(--theme-font-family)', boxSizing: 'border-box', flex: 1 },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '14px 28px',
-    background: 'linear-gradient(135deg, #1a5c5a 0%, #0f3d3b 100%)',
+    // gradient set inline from theme.colors
   },
 };

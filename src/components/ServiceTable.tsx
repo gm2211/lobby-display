@@ -149,7 +149,7 @@ export default function ServiceTable({ services, scrollSpeed = DEFAULTS.SERVICES
                 onClick={() => goToPage(i)}
                 style={{
                   ...styles.pageDot,
-                  background: i === currentPage ? '#00bcd4' : '#ccc',
+                  background: i === currentPage ? 'var(--theme-color-primary-400)' : '#ccc',
                   cursor: 'pointer',
                   border: 'none',
                   padding: 0,
@@ -191,7 +191,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   table: { width: '100%', borderCollapse: 'collapse' },
   th: {
-    fontFamily: "'Nunito', sans-serif",
+    fontFamily: 'var(--theme-font-family)',
     fontSize: '13px',
     color: '#555',
     fontWeight: 600,
@@ -201,7 +201,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#faf8f5',
   },
   thStatus: {
-    fontFamily: "'Nunito', sans-serif",
+    fontFamily: 'var(--theme-font-family)',
     fontSize: '13px',
     color: '#555',
     fontWeight: 600,

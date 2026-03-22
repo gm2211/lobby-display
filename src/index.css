@@ -1,3 +1,6 @@
+/* Load additional font families for theme selection */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&display=swap');
+
 @font-face {
   font-family: 'Nunito';
   src: url('./styles/Nunito/Nunito-VariableFont_wght.ttf') format('truetype');
@@ -21,7 +24,7 @@
 }
 
 body {
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--theme-font-family, 'Nunito'), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #f5f0eb;
   color: #333;
   overflow-x: hidden;

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <rect width="120" height="120" rx="16" fill="#3b5998"/>
+  <g fill="white">
+    <!-- Building icon -->
+    <rect x="30" y="35" width="60" height="55" rx="3" fill="none" stroke="white" stroke-width="3"/>
+    <rect x="40" y="45" width="10" height="10" rx="1"/>
+    <rect x="55" y="45" width="10" height="10" rx="1"/>
+    <rect x="70" y="45" width="10" height="10" rx="1"/>
+    <rect x="40" y="60" width="10" height="10" rx="1"/>
+    <rect x="55" y="60" width="10" height="10" rx="1"/>
+    <rect x="70" y="60" width="10" height="10" rx="1"/>
+    <rect x="52" y="75" width="16" height="15" rx="2"/>
+    <!-- Roof -->
+    <polygon points="25,37 60,20 95,37"/>
+  </g>
+</svg>

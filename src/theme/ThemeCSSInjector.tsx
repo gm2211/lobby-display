@@ -71,6 +71,9 @@ export function ThemeCSSInjector() {
     root.style.setProperty('--theme-header-gradient-start', colors.headerGradientStart);
     root.style.setProperty('--theme-header-gradient-end', colors.headerGradientEnd);
 
+    // Font family
+    root.style.setProperty('--theme-font-family', theme.fontFamily);
+
     // Update document title
     document.title = theme.htmlTitle;
   }, [theme]);

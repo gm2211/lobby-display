@@ -12,10 +12,22 @@ export const inputStyle: CSSProperties = {
   fontSize: '14px',
 };
 
+/** Use on <select> elements so they match <input> height (selects need slightly more padding) */
+export const selectStyle: CSSProperties = {
+  background: '#fff',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: '#ddd',
+  borderRadius: '6px',
+  padding: '9px 12px',
+  color: '#333',
+  fontSize: '14px',
+};
+
 /** Style for inputs with changed values */
 export const inputChangedStyle: CSSProperties = {
-  borderColor: 'rgba(180, 120, 0, 0.6)',
-  boxShadow: '0 0 6px rgba(180, 120, 0, 0.2)',
+  borderColor: 'var(--theme-color-secondary-500)',
+  boxShadow: '0 0 6px color-mix(in srgb, var(--theme-color-secondary-500) 30%, transparent)',
 };
 
 /** Section container style */
@@ -43,7 +55,7 @@ export const sectionStyle: CSSProperties = {
 export const sectionChangedStyle: CSSProperties = {
   borderLeftWidth: '3px',
   borderLeftStyle: 'solid',
-  borderLeftColor: '#e6a000',
+  borderLeftColor: 'var(--theme-color-secondary-500)',
 };
 
 /** Form group container */
@@ -110,7 +122,7 @@ export const itemChangedStyle: CSSProperties = {
 
 /** Draft indicator style */
 export const draftIndicatorStyle: CSSProperties = {
-  color: '#b07800',
+  color: 'var(--theme-color-secondary-600)',
   fontSize: '8px',
   flexShrink: 0,
   marginRight: '4px',

@@ -1002,7 +1002,7 @@ export default function Metrics() {
         Brought to you by{' '}
         <a
           href="https://github.com/gm2211"
-          style={{ color: '#1a5c5a' }}
+          style={{ color: 'var(--theme-color-primary-500)' }}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -1022,7 +1022,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
   },
   header: {
-    background: 'linear-gradient(135deg, #1a5c5a 0%, #0f3d3b 100%)',
+    background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)',
     padding: '14px 28px',
     display: 'flex',
     justifyContent: 'space-between',
@@ -1083,8 +1083,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '20px',
     borderWidth: '1px',
     borderStyle: 'solid',
-    borderColor: '#1a5c5a',
-    background: '#1a5c5a',
+    borderColor: 'var(--theme-color-primary-500)',
+    background: 'var(--theme-color-primary-500)',
     color: '#fff',
     fontSize: '13px',
     fontWeight: 600,
@@ -1101,7 +1101,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: {
     fontSize: '16px',
     fontWeight: 700,
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
     margin: '0 0 16px 0',
   },
   chartSubtitle: {
@@ -1267,7 +1267,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid' as const,
     borderBottomColor: '#f3f4f6',
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
     fontWeight: 700,
     textAlign: 'right' as const,
     fontVariantNumeric: 'tabular-nums' as const,
@@ -1290,7 +1290,7 @@ const styles: Record<string, React.CSSProperties> = {
   serviceTransitionName: {
     fontSize: '13px',
     fontWeight: 700,
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
     margin: '0 0 8px 0',
   },
   footer: {

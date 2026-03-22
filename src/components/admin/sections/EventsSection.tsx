@@ -152,7 +152,7 @@ export function EventsSection({
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
       <h2 style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         Events
-        {hasChanged && <span style={{ color: '#b07800', fontSize: '12px' }}>●</span>}
+        {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
       </h2>
 
       {/* Add/Edit Event Form */}
@@ -201,7 +201,7 @@ export function EventsSection({
               <button style={btn} onClick={submit}>
                 {editingId ? 'Save Draft' : 'Add Event to Draft'}
               </button>
-              <button style={{ ...btn, background: '#00838f' }} onClick={() => setPreviewingForm(true)}>
+              <button style={{ ...btn, background: 'var(--theme-color-primary-400)' }} onClick={() => setPreviewingForm(true)}>
                 Preview
               </button>
               <button style={{ ...btn, background: '#888' }} onClick={cancelEdit}>

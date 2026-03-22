@@ -202,12 +202,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     letterSpacing: '2px',
     textTransform: 'uppercase' as const,
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
     opacity: 0.7,
   },
   title: {
     margin: 0,
-    color: '#1a5c5a',
+    color: 'var(--theme-color-primary-500)',
     fontSize: '22px',
     fontWeight: 700,
     textAlign: 'center',
@@ -240,7 +240,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   button: {
     padding: '11px',
-    background: '#1a5c5a',
+    background: 'var(--theme-color-primary-500)',
     borderWidth: '0',
     borderStyle: 'solid',
     borderColor: 'transparent',

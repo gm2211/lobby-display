@@ -33,7 +33,7 @@ export default function EventCard({ event }: { event: Event }) {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    background: 'linear-gradient(135deg, #1a5c5a 0%, #1a4a48 100%)',
+    background: 'linear-gradient(135deg, var(--theme-color-primary-500) 0%, var(--theme-color-primary-600) 100%)',
     borderRadius: '12px',
     overflow: 'hidden',
     border: '1px solid rgba(255,255,255,0.1)',
@@ -45,6 +45,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '18px 22px',
   },
   title: { fontSize: '18px', fontWeight: 700, color: '#fff', margin: '0 0 4px' },
-  subtitle: { fontSize: '14px', color: '#b0d4d0', margin: '0 0 10px', fontStyle: 'italic' },
+  subtitle: { fontSize: '14px', color: 'var(--theme-color-secondary-200)', margin: '0 0 10px', fontStyle: 'italic' },
   accentBar: { height: '4px', width: '100%' },
 };

@@ -22,6 +22,7 @@ export { SnapshotHistory } from './SnapshotHistory';
 // Section components (re-exported from sections/)
 export {
   ConfigSection,
+  AppearanceSection,
   ServicesSection,
   EventsSection,
   AdvisoriesSection,

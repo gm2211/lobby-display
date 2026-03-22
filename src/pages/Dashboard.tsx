@@ -4,6 +4,7 @@ import ServiceTable from '../components/ServiceTable';
 import AutoScrollCards from '../components/AutoScrollCards';
 import AdvisoryTicker from '../components/AdvisoryTicker';
 import { DEFAULTS } from '../constants';
+import { RuntimeThemeOverride } from '../theme/RuntimeThemeOverride';
 import type { Service, Event, Advisory, BuildingConfig } from '../types';
 
 export default function Dashboard() {
@@ -91,6 +92,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page" style={styles.page}>
+      <RuntimeThemeOverride config={config} />
       <Header config={config} />
       <div className="dashboard-body" style={styles.body}>
         <ServiceTable services={services} scrollSpeed={servicesScrollSpeed} config={config} />

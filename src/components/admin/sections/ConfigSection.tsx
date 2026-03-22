@@ -1,22 +1,18 @@
 /**
- * ConfigSection - Dashboard configuration editor section.
- *
- * PURPOSE:
- * Manages the dashboard title, timezone, and logo settings.
- * Auto-saves changes with debounce for smooth editing experience.
+ * ConfigSection - Dashboard identity settings (title, timezone).
+ * Small, always-visible section at the top of the admin page.
  *
  * RELATED FILES:
+ * - AppearanceSection.tsx - Visual theming (presets, logo, colors, fonts)
  * - src/pages/Admin.tsx - Parent component
- * - src/types.ts - BuildingConfig type
- * - server/routes/config.ts - API endpoint
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { DEFAULTS } from '../../../constants';
 import {
-  inputStyle, inputChangedStyle, sectionStyle, sectionChangedStyle,
-  formGroupStyle, formLabelStyle, smallBtn, modalOverlay, modal,
+  inputStyle, inputChangedStyle, selectStyle, sectionStyle, sectionChangedStyle,
+  formGroupStyle, formLabelStyle,
 } from '../../../styles';
 
 interface ConfigSectionProps {
@@ -45,12 +41,6 @@ const COMMON_TIMEZONES = [
   'Australia/Sydney',
 ];
 
-/** Built-in logos from themes (always available) */
-const BUILTIN_LOGOS = [
-  { url: '/assets/themes/77-hudson/logo.png', label: '77 Hudson' },
-  { url: '/assets/themes/default/logo.png', label: 'Default' },
-];
-
 function getTimezoneLabel(tz: string): string {
   try {
     const now = new Date();
@@ -61,315 +51,90 @@ function getTimezoneLabel(tz: string): string {
   }
 }
 
-function parseCustomLogos(raw: string | undefined): string[] {
-  if (!raw) return [];
-  try { return JSON.parse(raw); } catch { return []; }
-}
-
 export function ConfigSection({ config, onSave, hasChanged, publishedConfig }: ConfigSectionProps) {
-  const [form, setForm] = useState({ dashboardTitle: '', timezone: 'America/New_York', logoUrl: '' });
-  const initializedRef = useRef(false);
-  const [addLogoOpen, setAddLogoOpen] = useState(false);
-  const [newLogoUrl, setNewLogoUrl] = useState('');
+  const [form, setForm] = useState({ dashboardTitle: '', timezone: 'America/New_York' });
+  const syncedRef = useRef(false);
+  const skipNextSaveRef = useRef(false);
 
-  const customLogos = parseCustomLogos(config?.customLogos);
+  const configFingerprint = config ? `${config.dashboardTitle}|${config.timezone}` : null;
+  const lastFingerprintRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (config && !initializedRef.current) {
+    if (!config || !configFingerprint) return;
+    const isFirstLoad = !syncedRef.current;
+    const isExternalChange = lastFingerprintRef.current !== null && lastFingerprintRef.current !== configFingerprint;
+    if (isFirstLoad || isExternalChange) {
+      skipNextSaveRef.current = true;
       setForm({
         dashboardTitle: config.dashboardTitle,
         timezone: config.timezone || 'America/New_York',
-        logoUrl: config.logoUrl || '',
       });
-      initializedRef.current = true;
+      syncedRef.current = true;
     }
-  }, [config]);
+    lastFingerprintRef.current = configFingerprint;
+  }, [config, configFingerprint]);
 
   useEffect(() => {
-    if (!initializedRef.current) return;
+    if (!syncedRef.current) return;
+    if (skipNextSaveRef.current) { skipNextSaveRef.current = false; return; }
     const timer = setTimeout(async () => {
       await api.put('/api/config', form);
-      onSave();
+      onSave({ config: config ? { ...config, ...form } : null });
     }, 150);
     return () => clearTimeout(timer);
   }, [form, onSave]);
 
   const allTimezones = useMemo(() => {
-    try {
-      return Intl.supportedValuesOf('timeZone');
-    } catch {
-      return COMMON_TIMEZONES;
-    }
+    try { return Intl.supportedValuesOf('timeZone'); }
+    catch { return COMMON_TIMEZONES; }
   }, []);
 
-  const selectLogo = (url: string) => {
-    setForm(f => ({ ...f, logoUrl: url }));
-  };
-
-  const addCustomLogo = () => {
-    if (!newLogoUrl.trim()) return;
-    const updated = [...customLogos, newLogoUrl.trim()];
-    api.put('/api/config', { customLogos: JSON.stringify(updated) });
-    onSave({ config: config ? { ...config, customLogos: JSON.stringify(updated) } : null });
-    // Also select it immediately
-    setForm(f => ({ ...f, logoUrl: newLogoUrl.trim() }));
-    setNewLogoUrl('');
-    setAddLogoOpen(false);
-  };
-
-  const removeCustomLogo = (url: string) => {
-    const updated = customLogos.filter(u => u !== url);
-    api.put('/api/config', { customLogos: JSON.stringify(updated) });
-    onSave({ config: config ? { ...config, customLogos: JSON.stringify(updated) } : null });
-    // If the removed logo was selected, clear selection
-    if (form.logoUrl === url) {
-      setForm(f => ({ ...f, logoUrl: '' }));
-    }
-  };
-
   const normalize = (v: unknown) => String(v ?? '');
-  const titleChanged =
-    publishedConfig && normalize(form.dashboardTitle) !== normalize(publishedConfig.dashboardTitle);
-  const timezoneChanged =
-    publishedConfig && normalize(form.timezone) !== normalize(publishedConfig.timezone || 'America/New_York');
-  const logoChanged =
-    publishedConfig && normalize(form.logoUrl) !== normalize(publishedConfig.logoUrl || '');
-
-  const allLogos = [
-    ...BUILTIN_LOGOS.map(l => ({ ...l, builtin: true })),
-    ...customLogos.map(url => ({ url, label: new URL(url, window.location.origin).pathname.split('/').pop() || 'Custom', builtin: false })),
-  ];
-
-  const cardSize = 64;
-  const selectedBorder = '2px solid #1a5c5a';
-  const defaultBorder = '2px solid #ddd';
+  const titleChanged = publishedConfig && normalize(form.dashboardTitle) !== normalize(publishedConfig.dashboardTitle);
+  const timezoneChanged = publishedConfig && normalize(form.timezone) !== normalize(publishedConfig.timezone || 'America/New_York');
 
   return (
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
       <h2 style={{ margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        Dashboard Config
-        {hasChanged && <span style={{ color: '#b07800', fontSize: '12px' }}>●</span>}
+        Dashboard
+        {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
       </h2>
-      <div style={{ ...formGroupStyle, marginBottom: '12px' }}>
-        <span style={formLabelStyle}>Dashboard Title</span>
-        <input
-          style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', ...(titleChanged ? inputChangedStyle : {}) }}
-          placeholder="Dashboard title"
-          value={form.dashboardTitle}
-          onChange={e => setForm(f => ({ ...f, dashboardTitle: e.target.value }))}
-        />
-        <div style={{ marginTop: '6px' }}>
-          <TitleFontSizeInput config={config} onSave={onSave} publishedConfig={publishedConfig} />
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ ...formGroupStyle, marginBottom: 0, flex: '1 1 300px' }}>
+          <span style={formLabelStyle}>Dashboard Title</span>
+          <input
+            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: '38px', ...(titleChanged ? inputChangedStyle : {}) }}
+            placeholder="Dashboard title"
+            value={form.dashboardTitle}
+            onChange={e => setForm(f => ({ ...f, dashboardTitle: e.target.value }))}
+          />
         </div>
-      </div>
-      <div style={{ ...formGroupStyle, marginBottom: '12px' }}>
-        <span style={formLabelStyle}>Timezone</span>
-        <select
-          style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', ...(timezoneChanged ? inputChangedStyle : {}) }}
-          value={form.timezone}
-          onChange={e => setForm(f => ({ ...f, timezone: e.target.value }))}
-        >
-          <optgroup label="Common">
-            {COMMON_TIMEZONES.map(tz => (
-              <option key={tz} value={tz}>{getTimezoneLabel(tz)}</option>
-            ))}
-          </optgroup>
-          <optgroup label="All Timezones">
-            {allTimezones.filter(tz => !COMMON_TIMEZONES.includes(tz)).map(tz => (
-              <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
-            ))}
-          </optgroup>
-        </select>
-      </div>
-      <div style={{ ...formGroupStyle, marginBottom: 0 }}>
-        <span style={{ ...formLabelStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
-          Logo
-          {logoChanged && <span style={{ color: '#b07800' }}>*</span>}
-        </span>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* "None" option */}
-          <div
-            onClick={() => selectLogo('')}
-            title="No custom logo (use theme default)"
-            style={{
-              width: cardSize,
-              height: cardSize,
-              borderRadius: '8px',
-              borderWidth: 0,
-              borderStyle: 'solid',
-              outline: form.logoUrl === '' ? selectedBorder : defaultBorder,
-              outlineOffset: '-2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background: form.logoUrl === '' ? '#e8f5f4' : '#fafafa',
-              fontSize: '10px',
-              color: '#888',
-              textAlign: 'center',
-            }}
+        <div style={{ ...formGroupStyle, marginBottom: 0, flex: '1 1 300px' }}>
+          <span style={formLabelStyle}>Timezone</span>
+          <select
+            style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: '38px', ...(timezoneChanged ? inputChangedStyle : {}) }}
+            value={form.timezone}
+            onChange={e => setForm(f => ({ ...f, timezone: e.target.value }))}
           >
-            Theme<br/>default
-          </div>
-
-          {/* Logo cards */}
-          {allLogos.map(logo => (
-            <div
-              key={logo.url}
-              style={{ position: 'relative', display: 'inline-block' }}
-            >
-              <div
-                onClick={() => selectLogo(logo.url)}
-                title={logo.label}
-                style={{
-                  width: cardSize,
-                  height: cardSize,
-                  borderRadius: '8px',
-                  borderWidth: 0,
-                  borderStyle: 'solid',
-                  outline: form.logoUrl === logo.url ? selectedBorder : defaultBorder,
-                  outlineOffset: '-2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  background: form.logoUrl === logo.url ? '#e8f5f4' : '#fafafa',
-                  padding: '8px',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <img
-                  src={logo.url}
-                  alt={logo.label}
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
-              {!logo.builtin && (
-                <button
-                  onClick={e => { e.stopPropagation(); removeCustomLogo(logo.url); }}
-                  title="Remove"
-                  style={{
-                    position: 'absolute',
-                    top: '-6px',
-                    right: '-6px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    background: '#f44336',
-                    color: '#fff',
-                    fontSize: '10px',
-                    lineHeight: '18px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    padding: 0,
-                    borderWidth: 0,
-                    borderStyle: 'none',
-                  }}
-                >
-                  x
-                </button>
-              )}
-              <div style={{ fontSize: '9px', color: '#999', textAlign: 'center', marginTop: '2px', maxWidth: cardSize, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {logo.label}
-              </div>
-            </div>
-          ))}
-
-          {/* Add new logo card */}
-          <div
-            onClick={() => setAddLogoOpen(true)}
-            title="Add custom logo"
-            style={{
-              width: cardSize,
-              height: cardSize,
-              borderRadius: '8px',
-              borderWidth: '2px',
-              borderStyle: 'dashed',
-              borderColor: '#ccc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background: '#fafafa',
-              fontSize: '24px',
-              color: '#aaa',
-              transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1a5c5a'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#ccc'; }}
-          >
-            +
-          </div>
+            <optgroup label="Common">
+              {COMMON_TIMEZONES.map(tz => (
+                <option key={tz} value={tz}>{getTimezoneLabel(tz)}</option>
+              ))}
+            </optgroup>
+            <optgroup label="All Timezones">
+              {allTimezones.filter(tz => !COMMON_TIMEZONES.includes(tz)).map(tz => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              ))}
+            </optgroup>
+          </select>
         </div>
       </div>
-
-      {/* Add logo modal */}
-      {addLogoOpen && (
-        <div style={modalOverlay} onClick={() => setAddLogoOpen(false)}>
-          <div style={{ ...modal, width: '420px', height: 'auto', padding: '20px' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <strong style={{ color: '#333' }}>Add Logo</strong>
-              <button style={smallBtn} onClick={() => setAddLogoOpen(false)}>Close</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input
-                style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-                placeholder="Paste image URL..."
-                value={newLogoUrl}
-                onChange={e => setNewLogoUrl(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addCustomLogo(); }}
-                autoFocus
-              />
-              {newLogoUrl && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '8px',
-                    background: '#f5f5f5',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '8px',
-                    boxSizing: 'border-box',
-                  }}>
-                    <img
-                      src={newLogoUrl}
-                      alt="Preview"
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#888' }}>Preview</span>
-                </div>
-              )}
-              <button
-                onClick={addCustomLogo}
-                disabled={!newLogoUrl.trim()}
-                style={{
-                  padding: '8px 16px',
-                  background: newLogoUrl.trim() ? '#1a5c5a' : '#ccc',
-                  color: '#fff',
-                  borderWidth: 0,
-                  borderStyle: 'none',
-                  borderRadius: '6px',
-                  cursor: newLogoUrl.trim() ? 'pointer' : 'not-allowed',
-                  fontSize: '14px',
-                }}
-              >
-                Add Logo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
 
-/** Separate component for title font size — commits on blur/Enter, not on every keystroke. */
-function TitleFontSizeInput({ config, onSave, publishedConfig }: {
+/** Exported for use in AppearanceSection */
+export function TitleFontSizeInput({ config, onSave, publishedConfig }: {
   config: BuildingConfig | null;
   onSave: (optimistic?: Record<string, unknown>) => void;
   publishedConfig: BuildingConfig | null;

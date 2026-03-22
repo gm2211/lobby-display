@@ -149,7 +149,7 @@ export function AdvisoriesSection({
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
       <h2 style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         Advisories
-        {hasChanged && <span style={{ color: '#b07800', fontSize: '12px' }}>●</span>}
+        {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
       </h2>
 
       {/* Add/Edit Advisory Form */}
@@ -218,7 +218,7 @@ export function AdvisoriesSection({
                 ...(isMarkedForDeletion
                   ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
                   : {}),
-                ...(isBeingEdited ? { borderWidth: '2px', borderColor: '#00838f' } : {}),
+                ...(isBeingEdited ? { borderWidth: '2px', borderColor: 'var(--theme-color-primary-500)' } : {}),
                 ...(!isBeingEdited && hasChanges ? itemChangedStyle : {}),
               }}
             >
@@ -252,7 +252,7 @@ export function AdvisoriesSection({
                   ) : (
                     <>
                       {activeChanged && (
-                        <span style={{ fontSize: '10px', color: '#b07800', opacity: 0.9 }}>
+                        <span style={{ fontSize: '10px', color: 'var(--theme-color-secondary-600)', opacity: 0.9 }}>
                           {pub.active ? 'ON' : 'OFF'} →
                         </span>
                       )}
@@ -298,7 +298,7 @@ export function AdvisoriesSection({
 
               {/* Diff indicators */}
               {!isMarkedForDeletion && messageChanged && (
-                <div style={{ fontSize: '11px', color: '#b07800', opacity: 0.9, paddingLeft: '16px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--theme-color-secondary-600)', opacity: 0.9, paddingLeft: '16px' }}>
                   <span>Was: "{pub.message}"</span>
                 </div>
               )}

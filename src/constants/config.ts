@@ -7,6 +7,7 @@ export const DEFAULTS = {
   NOTES_FONT_SIZE: 18,
   NOTES_FONT_WEIGHT: 700,
   TITLE_FONT_SIZE: 20,
+  FONT_SCALE: 100,
 } as const;
 
 // Theme colors
@@ -42,8 +43,8 @@ export const COLORS = {
 // Event card gradient (used in EventCard and EventCardPreview)
 export const EVENT_CARD_GRADIENT = {
   withImage: (imageUrl: string) =>
-    `linear-gradient(to right, rgba(20,60,58,0.92) 0%, rgba(20,60,58,0.75) 50%, rgba(20,60,58,0.3) 100%), url(${imageUrl})`,
-  noImage: 'linear-gradient(135deg, #1a5c5a 0%, #1a4a48 100%)',
+    `linear-gradient(to right, color-mix(in srgb, var(--theme-color-primary-700) 92%, transparent) 0%, color-mix(in srgb, var(--theme-color-primary-700) 75%, transparent) 50%, color-mix(in srgb, var(--theme-color-primary-700) 30%, transparent) 100%), url(${imageUrl})`,
+  noImage: 'linear-gradient(135deg, var(--theme-color-primary-500) 0%, var(--theme-color-primary-600) 100%)',
 } as const;
 
 // Timing constants

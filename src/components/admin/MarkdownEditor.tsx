@@ -66,8 +66,8 @@ const toolbarBtnStyle: CSSProperties = {
 
 const toolbarBtnActiveStyle: CSSProperties = {
   ...toolbarBtnStyle,
-  background: '#1a5c5a',
-  borderColor: '#0f3d3b',
+  background: 'var(--theme-color-primary-500)',
+  borderColor: 'var(--theme-color-primary-700)',
   color: '#fff',
 };
 

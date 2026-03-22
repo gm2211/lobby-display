@@ -71,7 +71,7 @@ async function getCurrentState() {
 
   return {
     config: config
-      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos }
+      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos, themePreset: config.themePreset, fontFamily: config.fontFamily, fontScale: config.fontScale, colorPrimary: config.colorPrimary, colorSecondary: config.colorSecondary }
       : null,
     services: {
       items: services.map(s => ({
@@ -162,7 +162,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // ============================================================================
 
 interface SnapshotData {
-  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string } | null;
+  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
@@ -260,6 +260,11 @@ async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
           timezone: data.config?.timezone ?? existing.timezone,
           logoUrl: data.config?.logoUrl ?? existing.logoUrl,
           customLogos: data.config?.customLogos ?? existing.customLogos,
+          themePreset: data.config?.themePreset ?? '',
+          fontFamily: data.config?.fontFamily ?? '',
+          fontScale: data.config?.fontScale ?? DEFAULT_FONTS.FONT_SCALE,
+          colorPrimary: data.config?.colorPrimary ?? '',
+          colorSecondary: data.config?.colorSecondary ?? '',
           scrollSpeed: data.events?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
           tickerSpeed: data.advisories?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
           servicesScrollSpeed: data.services?.scrollSpeed ?? DEFAULT_SPEEDS.SERVICES,
@@ -440,8 +445,14 @@ router.get(
     const currentAdvisoriesNorm = normalizeSection(current.advisories as { items?: unknown[] });
     const publishedAdvisoriesNorm = normalizeSection(published.advisories as { items?: unknown[] } | null);
 
+    // Normalize config comparison: fill in defaults for fields missing from old snapshots
+    const configDefaults = { themePreset: '', fontFamily: '', fontScale: 100, colorPrimary: '', colorSecondary: '' };
+    const publishedConfigNorm = published.config ? { ...configDefaults, ...published.config } : null;
+    // Use sorted keys for order-independent comparison
+    const sortedStringify = (obj: unknown) => JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());
+
     const sectionChanges = {
-      config: JSON.stringify(current.config) !== JSON.stringify(published.config),
+      config: sortedStringify(current.config) !== sortedStringify(publishedConfigNorm),
       services: hasMarkedServices || JSON.stringify(currentServicesNorm) !== JSON.stringify(publishedServicesNorm),
       events: hasMarkedEvents || JSON.stringify(currentEventsNorm) !== JSON.stringify(publishedEventsNorm),
       advisories: hasMarkedAdvisories || JSON.stringify(currentAdvisoriesNorm) !== JSON.stringify(publishedAdvisoriesNorm),

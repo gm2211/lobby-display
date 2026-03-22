@@ -121,6 +121,16 @@ export interface BuildingConfig {
   logoUrl: string;
   /** JSON array of user-added logo URLs */
   customLogos: string;
+  /** Last-selected preset ID (for "modified" indicator) */
+  themePreset: string;
+  /** Font family override (empty = theme default) */
+  fontFamily: string;
+  /** Global font scale percentage (80, 90, 100, 110, 120) */
+  fontScale: number;
+  /** Primary color hex (empty = theme default) */
+  colorPrimary: string;
+  /** Secondary/accent color hex (empty = theme default) */
+  colorSecondary: string;
 }
 
 /**

@@ -11,6 +11,7 @@
  */
 
 export { ConfigSection } from './ConfigSection';
+export { AppearanceSection } from './AppearanceSection';
 export { ServicesSection } from './ServicesSection';
 export { EventsSection } from './EventsSection';
 export { AdvisoriesSection } from './AdvisoriesSection';
