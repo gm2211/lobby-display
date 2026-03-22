@@ -119,6 +119,8 @@ export interface BuildingConfig {
   timezone: string;
   /** Custom logo URL (overrides theme default when non-empty) */
   logoUrl: string;
+  /** JSON array of user-added logo URLs */
+  customLogos: string;
 }
 
 /**

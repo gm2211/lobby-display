@@ -71,7 +71,7 @@ async function getCurrentState() {
 
   return {
     config: config
-      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl }
+      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos }
       : null,
     services: {
       items: services.map(s => ({
@@ -162,7 +162,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // ============================================================================
 
 interface SnapshotData {
-  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string } | null;
+  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
@@ -259,6 +259,7 @@ async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
           titleFontSize: data.config?.titleFontSize ?? existing.titleFontSize,
           timezone: data.config?.timezone ?? existing.timezone,
           logoUrl: data.config?.logoUrl ?? existing.logoUrl,
+          customLogos: data.config?.customLogos ?? existing.customLogos,
           scrollSpeed: data.events?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
           tickerSpeed: data.advisories?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
           servicesScrollSpeed: data.services?.scrollSpeed ?? DEFAULT_SPEEDS.SERVICES,

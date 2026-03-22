@@ -147,8 +147,15 @@ export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
           ))}
         </datalist>
         <span style={{ fontSize: '11px', color: '#aaa', whiteSpace: 'nowrap' }}>Fast</span>
-        <span style={{ whiteSpace: 'nowrap', color: '#888', fontSize: '13px', minWidth: '55px', textAlign: 'center' }}>
-          {localSpeed === 0 ? 'Off' : `${seconds}s`}
+        <span style={{ whiteSpace: 'nowrap', color: '#888', textAlign: 'center', lineHeight: '1.2' }}>
+          {localSpeed === 0
+            ? <span style={{ fontSize: '13px' }}>Off</span>
+            : <>
+                <span style={{ fontSize: '13px' }}>{seconds}s</span>
+                <br />
+                <span style={{ fontSize: '9px', color: '#aaa' }}>per cycle</span>
+              </>
+          }
         </span>
       </div>
     </div>

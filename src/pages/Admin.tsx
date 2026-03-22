@@ -148,7 +148,7 @@ export default function Admin() {
     <div style={{ ...styles.pageWrap, ...pendingBgStyle }}>
       <header className="admin-header" style={{ ...styles.header, position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ flex: 1 }}>
-          <h1 style={{ margin: 0, color: '#fff' }}>Building Updates — Admin</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: `${config?.titleFontSize ?? 20}px`, fontWeight: 400 }}>{config?.dashboardTitle || 'Building Updates'}</h1>
           {hasChanges && <span style={{ color: '#ffd54f', fontSize: '13px' }}>● Unpublished changes</span>}
         </div>
         <div className="admin-header-buttons" style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center', flex: 2 }}>
