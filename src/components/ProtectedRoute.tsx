@@ -7,11 +7,7 @@ export default function ProtectedRoute({ children, minRole = 'EDITOR' }: { child
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a1628', color: '#e0e0e0' }}>
-        Loading...
-      </div>
-    );
+    return <div style={{ minHeight: '100vh' }} />;
   }
 
   if (!user) {

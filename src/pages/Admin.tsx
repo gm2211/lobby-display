@@ -154,7 +154,7 @@ export default function Admin() {
       <header className="admin-header" style={{ ...styles.header, background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
           {(published?.config?.logoUrl || theme.logoUrl) && (
-            <img src={published?.config?.logoUrl || theme.logoUrl} alt="" style={{ height: '32px', width: 'auto' }} />
+            <img src={published?.config?.logoUrl || theme.logoUrl} alt="" style={{ height: '36px', width: 'auto' }} />
           )}
           <div style={{ position: 'relative' }}>
             <h1 style={{ margin: 0, color: '#fff', fontSize: `${config?.titleFontSize ?? 20}px`, fontWeight: 400, lineHeight: 1.3 }}>{config?.dashboardTitle || 'Building Updates'}</h1>
