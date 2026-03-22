@@ -147,20 +147,32 @@ async function start() {
     res.sendFile(loginHtmlPath);
   });
 
-  // Block JS bundles for unauthenticated users (prevents route/API enumeration)
-  app.use('/assets', (req, res, next) => {
-    if (req.path.endsWith('.js') && !req.session?.user) {
-      return res.redirect('/login');
-    }
-    next();
-  });
-
   if (isProd) {
     const distPath = path.resolve(__dirname, '../dist');
+
+    // Auth gate: redirect unauthenticated users to standalone login.
+    // Must come BEFORE express.static so index.html isn't served without auth.
+    app.use((req, res, next) => {
+      // Allow: /login, /api/*, /assets/*.css, /assets/*.ttf, static images, favicon
+      if (
+        req.path === '/login' ||
+        req.path.startsWith('/api/') ||
+        req.path === '/vite.svg' ||
+        req.path.startsWith('/images/') ||
+        (req.path.startsWith('/assets/') && !req.path.endsWith('.js'))
+      ) {
+        return next();
+      }
+      // Everything else (including / and /assets/*.js) requires auth
+      if (!req.session?.user) {
+        return res.redirect('/login');
+      }
+      next();
+    });
+
     app.use(express.static(distPath));
-    // SPA catch-all: require auth, otherwise redirect to standalone login
+    // SPA catch-all (auth already checked above)
     app.get('*', (req, res) => {
-      if (!req.session?.user) return res.redirect('/login');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
