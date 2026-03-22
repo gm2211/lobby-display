@@ -1,0 +1,693 @@
+version: "1.0"
+name: "Renzo"
+description: >
+  Renzo is a condo/building management lobby display application. It provides a public-facing
+  dashboard showing building service statuses, community events, and advisories, along with an
+  admin panel for managing all content. The app also includes a service metrics page for
+  tracking uptime and status history.
+
+pages:
+  - id: login
+    path: /login
+    title: "Renzo - Sign In"
+    visual_assertions:
+      - type: element_exists
+        selector: "form"
+        description: "Login form exists"
+      - type: text_contains
+        selector: "h1"
+        text: "Sign In"
+      - type: element_exists
+        selector: "input[type='text']"
+        description: "Username input field exists"
+      - type: element_exists
+        selector: "input[type='password']"
+        description: "Password input field exists"
+      - type: element_exists
+        selector: "button[type='submit']"
+        description: "Sign In submit button exists"
+      - type: text_contains
+        selector: "span"
+        text: "Renzo"
+    console_expectations:
+      - level: error
+        count: 0
+    scenarios:
+      - id: login-invalid-credentials
+        description: "Shows error message when invalid credentials are submitted"
+        steps:
+          - action: fill
+            selector: "input[type='text']"
+            value: "invalid-user"
+          - action: fill
+            selector: "input[type='password']"
+            value: "wrong-password"
+          - action: click
+            selector: "button[type='submit']"
+          - action: assert_text
+            selector: "form"
+            text: "Invalid username or password"
+
+      - id: login-empty-submission
+        description: "Prevents empty form submission via HTML5 required validation"
+        steps:
+          - action: click
+            selector: "button[type='submit']"
+          - action: assert_visible
+            selector: "input[type='text'][required]"
+
+      - id: login-successful
+        description: "Logs in with valid credentials and redirects to admin"
+        steps:
+          - action: fill
+            selector: "input[type='text']"
+            value: "admin-staging"
+          - action: fill
+            selector: "input[type='password']"
+            value: "${LOGIN_PASSWORD}"
+          - action: click
+            selector: "button[type='submit']"
+          - action: wait_for_navigation
+            url_pattern: "/admin"
+
+  - id: dashboard
+    path: /
+    title: "Building Updates"
+    title_note: "Dynamic — set from BuildingConfig.dashboardTitle"
+    visual_assertions:
+      - type: element_exists
+        selector: ".dashboard-page"
+        description: "Dashboard page container exists"
+      - type: element_exists
+        selector: ".header-row"
+        description: "Dashboard header row exists"
+      - type: text_contains
+        selector: "h1"
+        text: "Building Updates"
+      - type: element_exists
+        selector: ".service-table-container"
+        description: "Service status table exists"
+      - type: element_exists
+        selector: ".service-table-container table"
+        description: "Service table with rows exists"
+      - type: element_exists
+        selector: ".auto-scroll-wrapper"
+        description: "Auto-scrolling events section exists"
+      - type: element_exists
+        selector: "a[href='/admin']"
+        description: "Link to admin panel in header title"
+    expected_requests:
+      - method: GET
+        url_pattern: "/api/config"
+      - method: GET
+        url_pattern: "/api/services"
+      - method: GET
+        url_pattern: "/api/events"
+      - method: GET
+        url_pattern: "/api/advisories"
+    scenarios:
+      - id: dashboard-shows-services
+        description: "Displays all building services with status indicators"
+        steps:
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "HVAC System"
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "Elevator Bank A"
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "Elevator Bank B"
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "Hot Water"
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "Cold Water"
+          - action: assert_text
+            selector: ".service-table-container"
+            text: "Parking Garage"
+
+      - id: dashboard-shows-events
+        description: "Displays community event cards with titles, subtitles, details, and images"
+        steps:
+          - action: assert_text
+            selector: ".auto-scroll-wrapper"
+            text: "Kundalini Yoga"
+          - action: assert_text
+            selector: ".auto-scroll-wrapper"
+            text: "Community Bagel Brunch"
+          - action: assert_text
+            selector: ".auto-scroll-wrapper"
+            text: "Tequila Tasting Night"
+
+      - id: dashboard-shows-time
+        description: "Displays current time and date in header"
+        steps:
+          - action: assert_visible
+            selector: ".header-row"
+
+      - id: dashboard-shows-advisory-ticker
+        description: "Displays advisory messages in a yellow ticker bar at the bottom"
+        steps:
+          - action: assert_visible
+            selector: "div[style*='background: rgb(245, 200, 66)']"
+
+  - id: admin
+    path: /admin
+    title: "Building Updates — Admin"
+    title_note: "Dynamic — '{dashboardTitle} — Admin' from BuildingConfig.dashboardTitle"
+    visual_assertions:
+      - type: element_exists
+        selector: ".admin-header"
+        description: "Admin header bar exists"
+      - type: text_contains
+        selector: "h1"
+        text: "Renzo Dashboard"
+      - type: element_exists
+        selector: ".admin-header-buttons"
+        description: "Admin action buttons row exists"
+      - type: text_contains
+        selector: "h2"
+        text: "Dashboard Config"
+      - type: text_contains
+        selector: "h2"
+        text: "Services"
+      - type: text_contains
+        selector: "h2"
+        text: "Events"
+      - type: text_contains
+        selector: "h2"
+        text: "Advisories"
+      - type: text_contains
+        selector: "h2"
+        text: "Users"
+      - type: element_exists
+        selector: "input[placeholder='Dashboard title']"
+        description: "Dashboard title input field exists"
+      - type: element_exists
+        selector: "select"
+        description: "Timezone selector exists in Dashboard Config section"
+      - type: element_exists
+        selector: "input[placeholder='Custom logo URL (leave empty for default)']"
+        description: "Logo URL input field exists"
+      - type: element_exists
+        selector: "a[href='/metrics']"
+        description: "Metrics link in admin header"
+      - type: element_exists
+        selector: "a[href='/']"
+        description: "Dashboard link in admin header"
+    expected_requests:
+      - method: GET
+        url_pattern: "/api/config"
+      - method: GET
+        url_pattern: "/api/services"
+      - method: GET
+        url_pattern: "/api/events"
+      - method: GET
+        url_pattern: "/api/advisories"
+    scenarios:
+      - id: admin-edit-dashboard-title
+        description: "Allows editing the dashboard title"
+        steps:
+          - action: fill
+            selector: "input[placeholder='Dashboard title']"
+            value: "Test Building Title"
+          - action: assert_visible
+            selector: "input[placeholder='Dashboard title']"
+
+      - id: admin-add-service
+        description: "Adds a new service with a name field"
+        steps:
+          - action: click
+            selector: "button >> text='+ Add Service'"
+          - action: assert_visible
+            selector: "input[placeholder='Service name']"
+
+      - id: admin-change-service-status
+        description: "Changes a service status via dropdown (Operational/Maintenance/Outage)"
+        steps:
+          - action: assert_visible
+            selector: ".services-grid select"
+
+      - id: admin-delete-service
+        description: "Each service row has a delete button"
+        steps:
+          - action: assert_visible
+            selector: ".services-grid button"
+
+      - id: admin-services-page-speed
+        description: "Adjusts service table page speed via slider and number input"
+        steps:
+          - action: assert_visible
+            selector: "input.speed-slider-range[type='range']"
+
+      - id: admin-add-event
+        description: "Opens event creation form with title, subtitle, image upload, and markdown details"
+        steps:
+          - action: click
+            selector: "button >> text='+ Add New Event'"
+          - action: assert_visible
+            selector: "input[placeholder='Title']"
+          - action: assert_visible
+            selector: "input[placeholder='Subtitle']"
+          - action: assert_visible
+            selector: "input[type='file']"
+          - action: assert_visible
+            selector: "textarea"
+
+      - id: admin-edit-event
+        description: "Opens inline edit form for an existing event"
+        steps:
+          - action: click
+            selector: "button[title='Edit']"
+          - action: assert_visible
+            selector: "input[placeholder='Title']"
+
+      - id: admin-clone-event
+        description: "Clone button exists for each event"
+        steps:
+          - action: assert_visible
+            selector: "button[title='Clone']"
+
+      - id: admin-delete-event
+        description: "Delete button exists for each event"
+        steps:
+          - action: assert_visible
+            selector: "button[title='Delete']"
+
+      - id: admin-event-preview
+        description: "Preview button exists for individual events"
+        steps:
+          - action: assert_visible
+            selector: "button >> text='Preview'"
+
+      - id: admin-add-advisory
+        description: "Adds a new advisory with a message input"
+        steps:
+          - action: click
+            selector: "button >> text='+ Add New Advisory'"
+          - action: assert_visible
+            selector: "input[placeholder='Advisory message']"
+
+      - id: admin-toggle-advisory
+        description: "Advisories have an active/inactive toggle switch"
+        steps:
+          - action: assert_visible
+            selector: "button[title='Active - click to disable']"
+
+      - id: admin-publish
+        description: "Publish button publishes draft changes"
+        steps:
+          - action: assert_visible
+            selector: "button >> text='Publish'"
+
+      - id: admin-discard
+        description: "Discard button discards unpublished changes"
+        steps:
+          - action: assert_visible
+            selector: "button >> text='Discard'"
+
+      - id: admin-preview-draft
+        description: "Preview button opens draft preview overlay with iframe"
+        steps:
+          - action: click
+            selector: "button >> text='Preview'"
+          - action: assert_visible
+            selector: "iframe"
+          - action: assert_text
+            selector: "[style*='position: fixed']"
+            text: "Preview (Draft)"
+
+      - id: admin-history
+        description: "History button opens version history modal"
+        steps:
+          - action: click
+            selector: "button >> text='History'"
+          - action: assert_text
+            selector: "h2"
+            text: "Version History"
+          - action: assert_visible
+            selector: "button >> text='Close'"
+
+      - id: admin-add-user
+        description: "User management section with add user form"
+        steps:
+          - action: assert_visible
+            selector: "input[placeholder='Username']"
+          - action: assert_visible
+            selector: "input[placeholder='Password']"
+          - action: assert_visible
+            selector: "select"
+          - action: assert_visible
+            selector: "button >> text='Add'"
+
+      - id: admin-logout
+        description: "Logout button is visible and functional"
+        steps:
+          - action: assert_visible
+            selector: "button >> text='Logout'"
+
+      - id: admin-font-size-controls
+        description: "Service, notes, and title font size controls are available and support free typing"
+        steps:
+          - action: assert_visible
+            selector: "input[inputmode='numeric']"
+
+      - id: admin-timezone-selector
+        description: "Timezone can be changed in Dashboard Config section"
+        steps:
+          - action: assert_visible
+            selector: "select"
+          - action: assert_text
+            selector: "span"
+            text: "Timezone"
+
+      - id: admin-logo-url
+        description: "Custom logo URL can be set in Dashboard Config section"
+        steps:
+          - action: assert_visible
+            selector: "input[placeholder='Custom logo URL (leave empty for default)']"
+
+  - id: metrics
+    path: /metrics
+    title: "Renzo - Service Metrics"
+    visual_assertions:
+      - type: text_contains
+        selector: "h1"
+        text: "Service Metrics"
+      - type: text_contains
+        selector: "h2"
+        text: "Trend Insights"
+      - type: text_contains
+        selector: "h2"
+        text: "Status Distribution"
+      - type: text_contains
+        selector: "h2"
+        text: "Response Time Percentiles"
+      - type: text_contains
+        selector: "h2"
+        text: "Status Timeline"
+      - type: text_contains
+        selector: "h2"
+        text: "Per-Service Breakdown"
+      - type: element_exists
+        selector: ".recharts-wrapper"
+        description: "Recharts chart visualizations render"
+    scenarios:
+      - id: metrics-time-range-filter
+        description: "Time range buttons (24h, 7d, 30d) filter metric data"
+        steps:
+          - action: assert_visible
+            selector: "button >> text='24h'"
+          - action: assert_visible
+            selector: "button >> text='7d'"
+          - action: assert_visible
+            selector: "button >> text='30d'"
+          - action: click
+            selector: "button >> text='24h'"
+
+      - id: metrics-trend-insights
+        description: "Shows overall uptime, total incidents, avg recovery time, and best uptime"
+        steps:
+          - action: assert_text
+            selector: "section"
+            text: "Overall Uptime"
+          - action: assert_text
+            selector: "section"
+            text: "Total Incidents"
+          - action: assert_text
+            selector: "section"
+            text: "Avg Recovery Time"
+          - action: assert_text
+            selector: "section"
+            text: "Best Uptime"
+
+      - id: metrics-status-timeline
+        description: "Shows per-service status timeline with color-coded bars"
+        steps:
+          - action: assert_visible
+            selector: "div[title*='Mar']"
+
+      - id: metrics-navigate-to-admin
+        description: "Admin navigation button returns to admin page"
+        steps:
+          - action: click
+            selector: "button >> text='← Admin'"
+          - action: wait_for_navigation
+            url_pattern: "/admin"
+
+      - id: metrics-navigate-to-dashboard
+        description: "Dashboard navigation button returns to public dashboard"
+        steps:
+          - action: click
+            selector: "button >> text='← Dashboard'"
+          - action: wait_for_navigation
+            url_pattern: "/"
+
+flows:
+  - id: login-to-admin
+    description: "Complete flow from login page to admin dashboard"
+    steps:
+      - navigate: "/login"
+      - assert_page: login
+      - action: fill
+        selector: "input[type='text']"
+        value: "admin-staging"
+      - action: fill
+        selector: "input[type='password']"
+        value: "${LOGIN_PASSWORD}"
+      - action: click
+        selector: "button[type='submit']"
+      - action: wait_for_navigation
+        url_pattern: "/admin"
+      - assert_page: admin
+
+  - id: admin-publish-changes
+    description: "Edit content in admin and publish changes to live dashboard"
+    steps:
+      - navigate: "/admin"
+      - assert_page: admin
+      - action: fill
+        selector: "input[placeholder='Dashboard title']"
+        value: "Test Title Change"
+      - action: click
+        selector: "button >> text='Publish'"
+
+  - id: admin-preview-flow
+    description: "Preview draft changes before publishing"
+    steps:
+      - navigate: "/admin"
+      - assert_page: admin
+      - action: click
+        selector: "button >> text='Preview'"
+      - action: assert_visible
+        selector: "iframe"
+      - action: click
+        selector: "button >> text='Close'"
+      - action: assert_not_visible
+        selector: "iframe"
+
+  - id: admin-to-metrics-and-back
+    description: "Navigate from admin to metrics page and back"
+    steps:
+      - navigate: "/admin"
+      - assert_page: admin
+      - action: click
+        selector: "a[href='/metrics']"
+      - action: wait_for_navigation
+        url_pattern: "/metrics"
+      - assert_page: metrics
+      - action: click
+        selector: "button >> text='← Admin'"
+      - action: wait_for_navigation
+        url_pattern: "/admin"
+      - assert_page: admin
+
+  - id: admin-to-dashboard
+    description: "Navigate from admin to public dashboard view"
+    steps:
+      - navigate: "/admin"
+      - assert_page: admin
+      - action: click
+        selector: "a[href='/']"
+      - action: wait_for_navigation
+        url_pattern: "/"
+      - assert_page: dashboard
+
+  - id: unauthenticated-redirect
+    description: "Unauthenticated access to /admin redirects to /login"
+    steps:
+      - navigate: "/admin"
+      - action: wait_for_navigation
+        url_pattern: "/login"
+      - assert_page: login
+
+requirements:
+  - id: req-publish-draft-workflow
+    description: >
+      Admin changes are saved as drafts (indicated by 'Unpublished changes' badge)
+      and only go live on the public dashboard when the Publish button is clicked.
+      The Discard button should revert all unpublished changes.
+    verification: agent
+    validation_plan: >
+      1. Log into admin. 2. Note the current dashboard title. 3. Change the title.
+      4. Verify 'Unpublished changes' indicator appears. 5. Open the public dashboard
+      in another tab and verify the old title is still shown. 6. Go back to admin and
+      click Publish. 7. Reload the public dashboard and verify the new title appears.
+    evidence_format: "Screenshots of admin before/after publish and dashboard before/after."
+
+  - id: req-auto-scroll-events
+    description: >
+      The public dashboard auto-scrolls through event cards continuously.
+      Events are duplicated in the DOM to create a seamless infinite scroll effect.
+    verification: agent
+    validation_plan: >
+      1. Open the public dashboard. 2. Observe that the events section scrolls
+      automatically. 3. Wait for a full cycle and verify the scroll loops seamlessly.
+    evidence_format: "Multiple screenshots at different scroll positions showing movement."
+
+  - id: req-advisory-ticker
+    description: >
+      Active advisories display in a yellow ticker bar at the bottom of the dashboard.
+      Disabled advisories should not appear on the public dashboard.
+    verification: agent
+    validation_plan: >
+      1. Check the public dashboard for the yellow advisory ticker bar. 2. In admin,
+      toggle an advisory to inactive. 3. Publish changes. 4. Verify the advisory
+      disappears from the public dashboard ticker.
+    evidence_format: "Screenshots showing ticker with and without advisory."
+
+  - id: req-service-status-colors
+    description: >
+      Service statuses are color-coded: green dot for Operational, yellow/amber for
+      Maintenance, red for Outage. Both on the public dashboard and in the admin panel.
+    verification: agent
+    validation_plan: >
+      1. Open the public dashboard. 2. Find services with different statuses.
+      3. Verify Operational has green dot (rgb(76,175,80)), Maintenance has yellow
+      (rgb(255,193,7)), Outage has red (rgb(244,67,54)).
+    evidence_format: "Screenshot with annotated color verification."
+
+  - id: req-version-history
+    description: >
+      Each publish creates a version. The History modal shows all versions with
+      timestamps and authors. Versions can be individually deleted. There is a
+      'Purge Old Versions' option.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Click History button. 3. Verify version list shows version
+      numbers, timestamps, and author names. 4. Verify delete buttons exist per version.
+      5. Verify 'Purge Old Versions' button exists.
+    evidence_format: "Screenshot of version history modal."
+
+  - id: req-user-roles
+    description: >
+      The user management section supports three roles: VIEWER, EDITOR, and ADMIN.
+      New users can be created with username, password, and role assignment.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Scroll to Users section. 3. Verify role dropdown has VIEWER,
+      EDITOR, ADMIN options. 4. Verify current user shows their role badge.
+    evidence_format: "Screenshot of user management section."
+
+  - id: req-event-markdown-details
+    description: >
+      Event details textarea supports markdown formatting including bold, italic,
+      strikethrough, code, bullet lists, and numbered lists.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Click edit on an event. 3. Check the textarea placeholder
+      shows markdown syntax hints. 4. Enter markdown-formatted text. 5. Preview the
+      event and verify markdown renders correctly.
+    evidence_format: "Screenshot of markdown input and rendered preview."
+
+  - id: req-metrics-time-range-filtering
+    description: >
+      The metrics page supports 24h, 7d, and 30d time range filters that update
+      all charts and statistics when toggled.
+    verification: agent
+    validation_plan: >
+      1. Open metrics page. 2. Note the data shown for default range (7d).
+      3. Click 24h and verify charts and statistics update. 4. Click 30d and
+      verify charts and statistics update again.
+    evidence_format: "Screenshots of metrics page with different time ranges selected."
+
+  - id: req-page-title-from-config
+    description: >
+      The browser tab title on both the dashboard and admin pages is derived from
+      BuildingConfig.dashboardTitle. The dashboard shows the title as-is, and the
+      admin page appends ' — Admin'. Both update dynamically when the config changes.
+    verification: agent
+    validation_plan: >
+      1. Log into admin. 2. Note the browser tab title (should end with '— Admin').
+      3. Change the dashboard title. 4. Verify the admin tab title updates.
+      5. Open the public dashboard and verify its tab title matches the configured title.
+    evidence_format: "Screenshots showing browser tab titles on both pages."
+
+  - id: req-configurable-timezone
+    description: >
+      The dashboard clock displays time in the timezone configured in
+      BuildingConfig.timezone (IANA format, e.g. 'America/New_York'). The admin
+      panel provides a timezone dropdown with common timezones grouped at the top.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Find the Timezone dropdown in Dashboard Config. 3. Change
+      to a different timezone. 4. Publish. 5. Verify the dashboard clock reflects
+      the new timezone.
+    evidence_format: "Screenshots of timezone selector and dashboard clock."
+
+  - id: req-configurable-logo
+    description: >
+      The dashboard header logo can be customized via BuildingConfig.logoUrl.
+      When empty, the theme default logo is used. The admin panel shows a live
+      preview of the logo when a URL is entered.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Find the Logo URL input in Dashboard Config. 3. Enter a
+      valid image URL. 4. Verify the preview thumbnail appears. 5. Publish.
+      6. Verify the dashboard header shows the custom logo.
+    evidence_format: "Screenshots of logo URL input with preview and dashboard header."
+
+  - id: req-configurable-title-font-size
+    description: >
+      The dashboard header title font size is configurable via
+      BuildingConfig.titleFontSize (in px, range 12-48, default 20).
+      The admin panel provides a numeric text input next to the title field.
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Find the font size input next to the Dashboard Title.
+      3. Type a new value and blur/press Enter. 4. Publish. 5. Verify the
+      dashboard title renders at the new font size.
+    evidence_format: "Screenshots of font size input and dashboard title."
+
+  - id: req-dashboard-page-speed
+    description: >
+      The services section auto-pages through services at the configured speed.
+      The page speed is configurable in admin via slider (0-60 seconds).
+    verification: agent
+    validation_plan: >
+      1. Open admin. 2. Find the 'Page speed' slider in the Services section.
+      3. Adjust the speed value. 4. Preview or publish and verify the service
+      table pages at the new speed on the dashboard.
+    evidence_format: "Screenshots of speed configuration and dashboard behavior."
+
+assumptions:
+  - type: url_reachable
+    url: "${TARGET_BASE_URL}"
+    description: "The Renzo application is accessible at the target URL"
+  - type: url_reachable
+    url: "${TARGET_BASE_URL}/api/config"
+    description: "The API endpoint for configuration is accessible"
+  - type: url_reachable
+    url: "${TARGET_BASE_URL}/api/services"
+    description: "The API endpoint for services is accessible"
+  - type: url_reachable
+    url: "${TARGET_BASE_URL}/api/events"
+    description: "The API endpoint for events is accessible"
+  - type: url_reachable
+    url: "${TARGET_BASE_URL}/api/advisories"
+    description: "The API endpoint for advisories is accessible"
+
+variables:
+  base_url: "${TARGET_BASE_URL}"

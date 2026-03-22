@@ -78,6 +78,13 @@ export default function Dashboard() {
     return () => { if (timer) clearInterval(timer); };
   }, []);
 
+  // Set browser tab title from config
+  useEffect(() => {
+    if (config?.dashboardTitle) {
+      document.title = config.dashboardTitle;
+    }
+  }, [config?.dashboardTitle]);
+
   const scrollSpeed = config?.scrollSpeed ?? DEFAULTS.SCROLL_SPEED;
   const tickerSpeed = config?.tickerSpeed ?? DEFAULTS.TICKER_SPEED;
   const servicesScrollSpeed = config?.servicesScrollSpeed ?? DEFAULTS.SERVICES_SCROLL_SPEED;

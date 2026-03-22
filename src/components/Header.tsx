@@ -11,17 +11,21 @@ export default function Header({ config }: { config: BuildingConfig | null }) {
     return () => clearInterval(timer);
   }, []);
 
+  const tz = config?.timezone || undefined;
+
   const formatTime = (d: Date) =>
-    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz });
   const formatDate = (d: Date) =>
-    d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz });
+
+  const logoSrc = config?.logoUrl || theme.logoUrl;
 
   return (
     <header className="header-row" style={styles.header}>
       <div style={styles.left}>
-        <img src={theme.logoUrl} alt={theme.logoAlt} style={styles.logo} />
+        <img src={logoSrc} alt={theme.logoAlt} style={styles.logo} />
         <a href="/admin" style={{ textDecoration: 'none' }}>
-          <h1 style={styles.title}>{config?.dashboardTitle || 'Building Updates'}</h1>
+          <h1 style={{ ...styles.title, fontSize: `${config?.titleFontSize ?? 20}px` }}>{config?.dashboardTitle || 'Building Updates'}</h1>
         </a>
       </div>
       <div style={styles.right}>

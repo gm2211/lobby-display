@@ -66,6 +66,9 @@ model BuildingConfig {
   servicesFontSize     Int    @default(18)
   notesFontSize        Int    @default(18)
   notesFontWeight      Int    @default(700)
+  titleFontSize        Int    @default(20)
+  timezone             String @default("America/New_York")
+  logoUrl              String @default("")
 
   @@schema("public")
 }

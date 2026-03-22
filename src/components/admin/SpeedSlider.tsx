@@ -2,12 +2,15 @@
  * SpeedSlider - Shared range slider for speed settings.
  *
  * PURPOSE:
- * Replaces number-only inputs with a visual range slider + number input combo.
+ * Replaces number-only inputs with a visual range slider.
  * Used for scroll speed, ticker speed, and page speed settings.
  *
  * BEHAVIOR:
+ * - Slider represents "speed": left = slow/stopped, right = fast
+ * - Internally converts between speed (UI) and seconds (config)
+ *   speed 0 = stopped (0 seconds), speed N = 61-N seconds
  * - Slider drag updates local state only (instant visual feedback)
- * - onCommit fires on pointer release (slider) or blur/Enter (number input)
+ * - onCommit fires on pointer release (slider) or keyboard arrows
  * - External prop changes sync via useEffect
  *
  * RELATED FILES:
@@ -16,15 +19,26 @@
  * - src/components/admin/sections/ServicesSection.tsx
  */
 import { useState, useEffect, useId } from 'react';
-import { inputStyle } from '../../styles/admin';
 
 interface SpeedSliderProps {
   /** Label text, e.g. "Scroll speed" or "Page speed" */
   label: string;
-  /** Current speed in seconds (from config) */
+  /** Current speed in seconds (from config). 0 = stopped, higher = slower. */
   value: number;
-  /** Called ONLY on pointer release or number input blur/Enter */
+  /** Called ONLY on pointer release or keyboard arrow keys */
   onCommit: (val: number) => void;
+}
+
+/** Convert seconds (config value) to speed (slider value). */
+function secondsToSpeed(seconds: number): number {
+  if (seconds === 0) return 0;
+  return Math.max(1, Math.min(60, 61 - seconds));
+}
+
+/** Convert speed (slider value) to seconds (config value). */
+function speedToSeconds(speed: number): number {
+  if (speed === 0) return 0;
+  return Math.max(1, Math.min(60, 61 - speed));
 }
 
 /** CSS for range input styling (webkit + moz) */
@@ -75,19 +89,21 @@ const sliderCSS = `
 `;
 
 export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
-  const [localValue, setLocalValue] = useState(value);
+  const [localSpeed, setLocalSpeed] = useState(() => secondsToSpeed(value));
   const tickListId = useId();
 
   // Sync local state when prop changes externally (e.g. snapshot restore)
   useEffect(() => {
-    setLocalValue(value);
+    setLocalSpeed(secondsToSpeed(value));
   }, [value]);
 
   // Compute background gradient for webkit (filled portion)
-  const pct = (localValue / 60) * 100;
+  const pct = (localSpeed / 60) * 100;
   const trackBackground = `linear-gradient(to right, #1a5c5a ${pct}%, #ddd ${pct}%)`;
 
   const ticks = Array.from({ length: 13 }, (_, i) => i * 5); // 0, 5, 10, ... 60
+
+  const seconds = speedToSeconds(localSpeed);
 
   return (
     <div style={{ marginTop: '12px' }}>
@@ -102,6 +118,7 @@ export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
         }}
       >
         <span style={{ whiteSpace: 'nowrap' }}>{label}</span>
+        <span style={{ fontSize: '11px', color: '#aaa', whiteSpace: 'nowrap' }}>Slow</span>
         <input
           className="speed-slider-range"
           type="range"
@@ -109,13 +126,13 @@ export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
           max={60}
           step={1}
           list={tickListId}
-          value={localValue}
-          onChange={e => setLocalValue(Number(e.target.value))}
-          onPointerUp={() => onCommit(localValue)}
+          value={localSpeed}
+          onChange={e => setLocalSpeed(Number(e.target.value))}
+          onPointerUp={() => onCommit(speedToSeconds(localSpeed))}
           onKeyUp={e => {
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
                 e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              onCommit(localValue);
+              onCommit(speedToSeconds(localSpeed));
             }
           }}
           style={{
@@ -129,31 +146,9 @@ export function SpeedSlider({ label, value, onCommit }: SpeedSliderProps) {
             <option key={t} value={t} />
           ))}
         </datalist>
-        <input
-          type="number"
-          min={0}
-          max={60}
-          value={localValue}
-          onChange={e => setLocalValue(Number(e.target.value))}
-          onBlur={() => {
-            const clamped = Math.max(0, Math.min(60, localValue));
-            setLocalValue(clamped);
-            onCommit(clamped);
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          style={{
-            ...inputStyle,
-            width: '55px',
-            textAlign: 'center',
-            padding: '6px 4px',
-          }}
-        />
-        <span style={{ whiteSpace: 'nowrap', color: '#888', fontSize: '13px' }}>
-          {localValue === 0 ? 'Stopped' : 'seconds'}
+        <span style={{ fontSize: '11px', color: '#aaa', whiteSpace: 'nowrap' }}>Fast</span>
+        <span style={{ whiteSpace: 'nowrap', color: '#888', fontSize: '13px', minWidth: '55px', textAlign: 'center' }}>
+          {localSpeed === 0 ? 'Off' : `${seconds}s`}
         </span>
       </div>
     </div>
