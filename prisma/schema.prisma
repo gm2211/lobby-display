@@ -69,6 +69,7 @@ model BuildingConfig {
   titleFontSize        Int    @default(20)
   timezone             String @default("America/New_York")
   logoUrl              String @default("")
+  customLogos          String @default("[]")
 
   @@schema("public")
 }
