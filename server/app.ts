@@ -14,7 +14,6 @@ import snapshotsRouter from './routes/snapshots.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import metricsRouter from './routes/metrics.js';
-import forumUpvotesRouter from './routes/forumUpvotes.js';
 import messagesRouter from './routes/messages.js';
 import { sseHandler } from './sse.js';
 import { csrfMiddleware } from './middleware/csrf.js';
@@ -178,9 +177,6 @@ app.use('/api/events', dashboardProtect, eventsRouter);
 app.use('/api/advisories', dashboardProtect, advisoriesRouter);
 app.use('/api/config', dashboardProtect, configRouter);
 app.use('/api/snapshots', snapshotsProtect, snapshotsRouter);
-
-// Forum routes (auth-protected, any authenticated user can upvote)
-app.use('/api/forum', requireAuth, forumUpvotesRouter);
 
 // Messages: all routes require authentication (any role)
 app.use('/api/messages', requireAuth, messagesRouter);
