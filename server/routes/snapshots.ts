@@ -71,7 +71,7 @@ async function getCurrentState() {
 
   return {
     config: config
-      ? { dashboardTitle: config.dashboardTitle }
+      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl }
       : null,
     services: {
       items: services.map(s => ({
@@ -162,7 +162,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // ============================================================================
 
 interface SnapshotData {
-  config?: { dashboardTitle?: string } | null;
+  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
@@ -256,6 +256,9 @@ async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
         where: { id: existing.id },
         data: {
           dashboardTitle: data.config?.dashboardTitle ?? existing.dashboardTitle,
+          titleFontSize: data.config?.titleFontSize ?? existing.titleFontSize,
+          timezone: data.config?.timezone ?? existing.timezone,
+          logoUrl: data.config?.logoUrl ?? existing.logoUrl,
           scrollSpeed: data.events?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
           tickerSpeed: data.advisories?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
           servicesScrollSpeed: data.services?.scrollSpeed ?? DEFAULT_SPEEDS.SERVICES,

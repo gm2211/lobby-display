@@ -113,6 +113,12 @@ export interface BuildingConfig {
   notesFontSize: number;
   /** Font weight for notes values (e.g. 400=normal, 700=bold) */
   notesFontWeight: number;
+  /** Font size in px for the dashboard title in the header */
+  titleFontSize: number;
+  /** IANA timezone for the dashboard clock (e.g. "America/New_York") */
+  timezone: string;
+  /** Custom logo URL (overrides theme default when non-empty) */
+  logoUrl: string;
 }
 
 /**

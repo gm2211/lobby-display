@@ -89,6 +89,13 @@ export default function Admin() {
 
   useEffect(() => { checkDraft(); }, [checkDraft]);
 
+  // Set browser tab title from config
+  useEffect(() => {
+    if (config?.dashboardTitle) {
+      document.title = `${config.dashboardTitle} — Admin`;
+    }
+  }, [config?.dashboardTitle]);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (previewOpen || historyOpen) {

@@ -6,6 +6,7 @@ export const DEFAULTS = {
   SERVICES_FONT_SIZE: 18,
   NOTES_FONT_SIZE: 18,
   NOTES_FONT_WEIGHT: 700,
+  TITLE_FONT_SIZE: 20,
 } as const;
 
 // Theme colors

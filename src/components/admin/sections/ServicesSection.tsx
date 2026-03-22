@@ -29,7 +29,7 @@
  * - src/types.ts - Service type
  * - src/components/admin/StatusSelect.tsx - Status dropdown
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Service, BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { STATUS_COLORS, DEFAULTS } from '../../../constants';
@@ -40,6 +40,56 @@ import {
 } from '../../../styles';
 import { StatusSelect } from '../StatusSelect';
 import { SpeedSlider } from '../SpeedSlider';
+
+/** Number input that allows free typing and commits on blur/Enter.
+ *  Uses type="text" + inputMode="numeric" to avoid browser quirks with
+ *  type="number" controlled inputs (some browsers don't fire onChange
+ *  reliably during typing). Ignores external prop changes while focused. */
+function NumberInput({ value, min, max, onCommit, style }: {
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (val: number) => void;
+  style?: React.CSSProperties;
+}) {
+  const [local, setLocal] = useState(String(value));
+  const focusedRef = useRef(false);
+
+  // Sync from parent, but never while the user is typing
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setLocal(String(value));
+    }
+  }, [value]);
+
+  const commit = () => {
+    focusedRef.current = false;
+    const num = parseInt(local, 10);
+    if (!isNaN(num) && num >= min && num <= max) {
+      onCommit(num);
+    } else {
+      setLocal(String(value));
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={local}
+      onFocus={() => { focusedRef.current = true; }}
+      onChange={e => {
+        // Allow only digits (and empty for clearing)
+        const v = e.target.value;
+        if (v === '' || /^\d+$/.test(v)) setLocal(v);
+      }}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      style={style}
+    />
+  );
+}
 
 interface ServicesSectionProps {
   /** Current service list */
@@ -430,17 +480,13 @@ export function ServicesSection({
       <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666' }}>
           Service font size
-          <input
-            type="number"
+          <NumberInput
+            value={config?.servicesFontSize ?? DEFAULTS.SERVICES_FONT_SIZE}
             min={10}
             max={36}
-            value={config?.servicesFontSize ?? DEFAULTS.SERVICES_FONT_SIZE}
-            onChange={e => {
-              const val = Number(e.target.value);
-              if (val >= 10 && val <= 36) {
-                api.put('/api/config', { servicesFontSize: val });
-                onSave({ config: config ? { ...config, servicesFontSize: val } : null });
-              }
+            onCommit={val => {
+              api.put('/api/config', { servicesFontSize: val });
+              onSave({ config: config ? { ...config, servicesFontSize: val } : null });
             }}
             style={{ ...inputStyle, width: '60px', padding: '2px 6px', fontSize: '12px' }}
           />
@@ -448,17 +494,13 @@ export function ServicesSection({
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666' }}>
           Notes font size
-          <input
-            type="number"
+          <NumberInput
+            value={config?.notesFontSize ?? DEFAULTS.NOTES_FONT_SIZE}
             min={10}
             max={36}
-            value={config?.notesFontSize ?? DEFAULTS.NOTES_FONT_SIZE}
-            onChange={e => {
-              const val = Number(e.target.value);
-              if (val >= 10 && val <= 36) {
-                api.put('/api/config', { notesFontSize: val });
-                onSave({ config: config ? { ...config, notesFontSize: val } : null });
-              }
+            onCommit={val => {
+              api.put('/api/config', { notesFontSize: val });
+              onSave({ config: config ? { ...config, notesFontSize: val } : null });
             }}
             style={{ ...inputStyle, width: '60px', padding: '2px 6px', fontSize: '12px' }}
           />
