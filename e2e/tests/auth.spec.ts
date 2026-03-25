@@ -82,6 +82,7 @@ test.describe('Authentication', () => {
       await freshPage.locator('#login-pass').fill(creds.password);
       await freshPage.locator('#login-form button[type="submit"]').click();
       await expect(freshPage).not.toHaveURL(/\/login/, { timeout: 15_000 });
+      await freshPage.goto('/admin');
       await expect(freshPage.locator('.admin-header')).toBeVisible();
 
       // Click the Logout button

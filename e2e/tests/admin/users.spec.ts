@@ -106,8 +106,9 @@ test.describe('Admin - Users Section', () => {
       await editorPage.locator('#login-pass').fill(editorCreds.password);
       await editorPage.locator('#login-form button[type="submit"]').click();
 
-      // Wait for redirect after login
+      // Wait for redirect after login, then navigate to admin
       await expect(editorPage).not.toHaveURL(/\/login/, { timeout: 15_000 });
+      await editorPage.goto('/admin');
 
       // The editor should NOT see the Users section
       // The Users section heading should not be visible
