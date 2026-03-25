@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -34,9 +35,9 @@ jobs:
 
       - name: Create tag
         run: |
-          git tag "${{ steps.tag.outputs.next }}"
+          git tag "${{ steps.tag.outputs.next }}" "${{ github.sha }}"
           git push origin "${{ steps.tag.outputs.next }}"
 
       - name: Advance deploy/staging
         run: |
-          git push origin HEAD:refs/heads/deploy/staging --force
+          git push origin ${{ github.sha }}:refs/heads/deploy/staging --force

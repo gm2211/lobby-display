@@ -91,7 +91,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$TAG" ]; then
-  TAG=$(pick_tag)
+  # Default to the commit at HEAD of deploy/staging
+  STAGING_HEAD=$(git rev-parse deploy/staging 2>/dev/null)
+  MATCHING_TAG=$(git tag --points-at "$STAGING_HEAD" 'v*' 2>/dev/null | sort -V | tail -1)
+  if [ -n "$MATCHING_TAG" ]; then
+    echo "Auto-selected tag $MATCHING_TAG (HEAD of deploy/staging)"
+    TAG="$MATCHING_TAG"
+  else
+    echo "No tag found at deploy/staging HEAD ($STAGING_HEAD)."
+    echo "Falling back to interactive picker."
+    TAG=$(pick_tag)
+  fi
 fi
 
 if [ -z "$TAG" ]; then
