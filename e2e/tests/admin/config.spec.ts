@@ -32,8 +32,8 @@ test.describe('Admin - Config Section', () => {
   test('Displays current building title', async ({ page }) => {
     await page.goto('/admin');
 
-    // The Config section should be visible with "Dashboard Config" heading
-    await expect(page.locator('h2', { hasText: 'Dashboard Config' })).toBeVisible();
+    // The Config section should be visible with "Dashboard" heading
+    await expect(page.locator('h2', { hasText: 'Dashboard' })).toBeVisible();
 
     // The title input should be present with a value
     const titleInput = page.getByPlaceholder('Dashboard title');

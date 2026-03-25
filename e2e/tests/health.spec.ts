@@ -25,11 +25,9 @@ test.describe('Smoke / Health checks', () => {
     const freshPage = await ctx.newPage();
     try {
       await freshPage.goto('/login');
-      await expect(freshPage.getByLabel(/username/i)).toBeVisible();
-      await expect(freshPage.getByLabel(/password/i)).toBeVisible();
-      await expect(
-        freshPage.getByRole('button', { name: /sign\s*in|log\s*in|submit|create/i }),
-      ).toBeVisible();
+      await expect(freshPage.locator('#login-user')).toBeVisible();
+      await expect(freshPage.locator('#login-pass')).toBeVisible();
+      await expect(freshPage.locator('#login-form button[type="submit"]')).toBeVisible();
     } finally {
       await ctx.close();
     }

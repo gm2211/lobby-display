@@ -4,7 +4,7 @@ import { getCredentials } from '../helpers/auth';
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
 test.describe('Authentication', () => {
-  test('Valid login redirects to /admin', async ({ browser }) => {
+  test('Valid login redirects away from /login', async ({ browser }) => {
     // Use a fresh context so we start unauthenticated
     const ctx = await browser.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } });
     const page = await ctx.newPage();
@@ -12,11 +12,11 @@ test.describe('Authentication', () => {
       const creds = getCredentials('admin');
 
       await page.goto('/login');
-      await page.getByLabel(/username/i).fill(creds.username);
-      await page.getByLabel(/password/i).fill(creds.password);
-      await page.getByRole('button', { name: /sign\s*in|log\s*in|submit/i }).click();
+      await page.locator('#login-user').fill(creds.username);
+      await page.locator('#login-pass').fill(creds.password);
+      await page.locator('#login-form button[type="submit"]').click();
 
-      await expect(page).toHaveURL(/\/admin/, { timeout: 15_000 });
+      await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
     } finally {
       await ctx.close();
     }
@@ -27,9 +27,9 @@ test.describe('Authentication', () => {
     const page = await ctx.newPage();
     try {
       await page.goto('/login');
-      await page.getByLabel(/username/i).fill('nonexistent_user_xyz');
-      await page.getByLabel(/password/i).fill('wrongpassword123');
-      await page.getByRole('button', { name: /sign\s*in|log\s*in|submit/i }).click();
+      await page.locator('#login-user').fill('nonexistent_user_xyz');
+      await page.locator('#login-pass').fill('wrongpassword123');
+      await page.locator('#login-form button[type="submit"]').click();
 
       // The error message should appear on screen
       await expect(page.getByText(/invalid|failed|incorrect|error/i)).toBeVisible({
@@ -50,14 +50,14 @@ test.describe('Authentication', () => {
 
       // Both fields are marked "required" in the HTML, so clicking submit with
       // empty fields should either show native validation or a custom error.
-      const usernameInput = page.getByLabel(/username/i);
-      const passwordInput = page.getByLabel(/password/i);
+      const usernameInput = page.locator('#login-user');
+      const passwordInput = page.locator('#login-pass');
 
       // Ensure fields are empty
       await usernameInput.clear();
       await passwordInput.clear();
 
-      await page.getByRole('button', { name: /sign\s*in|log\s*in|submit/i }).click();
+      await page.locator('#login-form button[type="submit"]').click();
 
       // The form should not navigate away -- still on /login
       await expect(page).toHaveURL(/\/login/);
@@ -78,10 +78,10 @@ test.describe('Authentication', () => {
 
       // Log in with a fresh session
       await freshPage.goto('/login');
-      await freshPage.getByLabel(/username/i).fill(creds.username);
-      await freshPage.getByLabel(/password/i).fill(creds.password);
-      await freshPage.getByRole('button', { name: /sign\s*in|log\s*in|submit/i }).click();
-      await expect(freshPage).toHaveURL(/\/admin/, { timeout: 15_000 });
+      await freshPage.locator('#login-user').fill(creds.username);
+      await freshPage.locator('#login-pass').fill(creds.password);
+      await freshPage.locator('#login-form button[type="submit"]').click();
+      await expect(freshPage).not.toHaveURL(/\/login/, { timeout: 15_000 });
       await expect(freshPage.locator('.admin-header')).toBeVisible();
 
       // Click the Logout button

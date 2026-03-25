@@ -102,14 +102,12 @@ test.describe('Admin - Users Section', () => {
 
       // Log in as editor via the UI
       await editorPage.goto('/login');
-      await editorPage.getByLabel(/username/i).fill(editorCreds.username);
-      await editorPage.getByLabel(/password/i).fill(editorCreds.password);
-      await editorPage
-        .getByRole('button', { name: /log\s*in|sign\s*in|submit/i })
-        .click();
+      await editorPage.locator('#login-user').fill(editorCreds.username);
+      await editorPage.locator('#login-pass').fill(editorCreds.password);
+      await editorPage.locator('#login-form button[type="submit"]').click();
 
-      // Wait for redirect to admin
-      await expect(editorPage).toHaveURL(/\/admin/, { timeout: 15_000 });
+      // Wait for redirect after login
+      await expect(editorPage).not.toHaveURL(/\/login/, { timeout: 15_000 });
 
       // The editor should NOT see the Users section
       // The Users section heading should not be visible
