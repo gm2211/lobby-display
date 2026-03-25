@@ -5,9 +5,9 @@ setup('authenticate as admin', async ({ page }) => {
   const creds = getCredentials('admin');
 
   await page.goto('/login');
-  await page.getByLabel(/username/i).fill(creds.username);
-  await page.getByLabel(/password/i).fill(creds.password);
-  await page.getByRole('button', { name: /log\s*in|sign\s*in|submit/i }).click();
+  await page.locator('#login-user').fill(creds.username);
+  await page.locator('#login-pass').fill(creds.password);
+  await page.locator('#login-form button[type="submit"]').click();
 
   // Wait for redirect to admin
   await expect(page).toHaveURL(/\/admin/, { timeout: 15_000 });
