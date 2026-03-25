@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { invalidateThemeCache } from '../themeCSS.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.put('/', asyncHandler(async (req, res) => {
       data: req.body,
     });
   }
+  invalidateThemeCache();
   res.json(config);
 }));
 

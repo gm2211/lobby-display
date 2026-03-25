@@ -5,6 +5,10 @@ export function ThemeCSSInjector() {
   const theme = useTheme();
 
   useEffect(() => {
+    // In production the server injects CSS variables via <style id="server-theme">.
+    // Skip client-side injection to avoid a flash of default-then-correct colors.
+    if (document.getElementById('server-theme')) return;
+
     const root = document.documentElement;
     const { colors } = theme;
 

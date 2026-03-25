@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import Fastify from 'fastify';
@@ -7,6 +8,7 @@ import fastifyExpress from '@fastify/express';
 import app from './app.js';
 import prisma from './db.js';
 import { DEFAULT_SPEEDS } from './constants.js';
+import { getThemeStyleBlock, getDashboardTitle } from './themeCSS.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -150,6 +152,9 @@ async function start() {
   if (isProd) {
     const distPath = path.resolve(__dirname, '../dist');
 
+    // Read index.html once at startup for server-side theme injection
+    const rawIndexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+
     // Auth gate: redirect unauthenticated users to standalone login.
     // Must come BEFORE express.static so index.html isn't served without auth.
     app.use((req, res, next) => {
@@ -170,10 +175,22 @@ async function start() {
       next();
     });
 
-    app.use(express.static(distPath));
-    // SPA catch-all (auth already checked above)
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    // Serve static assets but NOT index.html (we inject theme vars into it)
+    app.use(express.static(distPath, { index: false }));
+    // SPA catch-all with server-side theme injection (auth already checked above)
+    app.get('*', async (req, res) => {
+      const [themeStyle, title] = await Promise.all([
+        getThemeStyleBlock(),
+        getDashboardTitle(),
+      ]);
+      const escapedTitle = title
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      let html = rawIndexHtml.replace('</head>', `${themeStyle}\n</head>`);
+      html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapedTitle}</title>`);
+      res.type('html').send(html);
     });
   } else {
     const { createServer } = await import('vite');

@@ -50,6 +50,7 @@ import prisma from '../db.js';
 import { broadcast } from '../sse.js';
 import { asyncHandler, NotFoundError, ValidationError } from '../middleware/errorHandler.js';
 import { DEFAULT_SPEEDS, DEFAULT_FONTS } from '../constants.js';
+import { invalidateThemeCache } from '../themeCSS.js';
 
 const router = Router();
 
@@ -523,6 +524,7 @@ router.post(
       data: { version, data: JSON.stringify(state), publishedBy },
     });
 
+    invalidateThemeCache();
     broadcast();
     res.json({ ok: true, version, publishedBy, state: toApiFormat(state) });
   })

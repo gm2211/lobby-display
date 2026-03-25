@@ -1,23 +1,25 @@
 /**
- * ThemeContext — Compile-time Theming with Runtime Overrides
+ * ThemeContext — Default Theme with Runtime Overrides
  *
  * Provides the active TenantTheme to the component tree.
- * Uses the compile-time theme from VITE_THEME env var (or the default fallback),
- * with optional runtime overrides from BuildingConfig (colorPrimary, colorSecondary, fontFamily).
+ * Uses the default theme as client-side fallback; in production the server
+ * injects correct CSS variables before first paint (see server/themeCSS.ts).
+ * Runtime overrides from BuildingConfig (colorPrimary, colorSecondary, fontFamily)
+ * are applied on top.
  *
  * RELATED FILES:
- * - src/theme/ThemeCSSInjector.tsx - injects CSS custom properties
- * - shared/theme/types.ts         - TenantTheme interface
- * - shared/theme/registry.ts      - loadTheme()
- * - shared/theme/colorUtils.ts    - generatePalette()
+ * - src/theme/ThemeCSSInjector.tsx - injects CSS custom properties (skipped when server-injected)
+ * - server/themeCSS.ts             - server-side CSS variable injection
+ * - shared/theme/types.ts          - TenantTheme interface
+ * - shared/theme/registry.ts       - loadTheme()
+ * - shared/theme/colorUtils.ts     - generatePalette()
  */
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { loadTheme } from '../../shared/theme/registry';
 import type { TenantTheme, ThemeColors } from '../../shared/theme/types';
 import { generatePalette } from '../../shared/theme/colorUtils';
 
-const themeId = import.meta.env.VITE_THEME as string | undefined;
-const compiledTheme = loadTheme(themeId);
+const compiledTheme = loadTheme('default');
 
 const ThemeContext = createContext<TenantTheme | null>(null);
 
