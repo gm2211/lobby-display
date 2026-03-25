@@ -91,8 +91,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$TAG" ]; then
-  # Default to the commit at HEAD of deploy/staging
-  STAGING_HEAD=$(git rev-parse deploy/staging 2>/dev/null)
+  # Default to the commit at HEAD of deploy/staging (fetch remote first)
+  git fetch origin deploy/staging --tags --quiet 2>/dev/null
+  STAGING_HEAD=$(git rev-parse origin/deploy/staging 2>/dev/null)
   MATCHING_TAG=$(git tag --points-at "$STAGING_HEAD" 'v*' 2>/dev/null | sort -V | tail -1)
   if [ -n "$MATCHING_TAG" ]; then
     echo "Auto-selected tag $MATCHING_TAG (HEAD of deploy/staging)"
