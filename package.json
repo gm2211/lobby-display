@@ -19,7 +19,7 @@
     "screenshot:compare": "tsx scripts/screenshot-compare.ts"
   },
   "dependencies": {
-    "@fastify/express": "^4.0.4",
+    "@fastify/express": "^4.0.5",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "esbuild-wasm": "^0.25.0",
