@@ -19,6 +19,12 @@ If you add a route, update README's structure and DEVELOPMENT.md's patterns. If 
 
 ---
 
+## Context compaction
+
+If conversation exceeds **~150k tokens**, run `/compact` proactively before continuing. Skip ONLY when actively processing a single large file/transcript that justifies the budget. Durable state belongs in memory, bd issues, and PRs — not in the live transcript.
+
+---
+
 ## CRITICAL GOTCHAS
 
 **Stop and read these before making changes.**
@@ -41,6 +47,18 @@ If you add a route, update README's structure and DEVELOPMENT.md's patterns. If 
 | Snapshots | See `server/routes/snapshots.ts` header comment for draft/publish workflow |
 | Role-based access | GETs require auth only (any role). Mutations (POST/PUT/DELETE) require `EDITOR` or `ADMIN`. See `dashboardProtect` in `server/app.ts` |
 | CSRF | All state-changing `/api/*` requests require a CSRF token via `server/middleware/csrf.ts` |
+
+---
+
+## Bead pickup workflow (MANDATORY)
+
+When picking up any `bd` issue for work:
+
+1. **Plan first** — write a short plan covering scope, files to change, **spec yaml updates required**, and verification approach. No code edits before the plan.
+2. **Update the spec** — every plan MUST include edits to the project's `*.spec.yaml` capturing the new/changed behavior. Spec edit precedes implementation. If no spec yaml exists yet, create one as part of the first bead pickup.
+3. **Implement** — code to satisfy the spec.
+4. **Specify-verify** — run `specify verify` against local dev OR the deployed site. Lint alone is insufficient.
+5. **Close only with evidence** — a bead is NOT considered resolved until `specify verify` passes (locally or against the remote site). Attach verification output to the bead.
 
 ---
 
