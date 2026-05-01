@@ -25,7 +25,7 @@
     "esbuild-wasm": "^0.25.0",
     "express": "^4.21.0",
     "express-session": "^1.19.0",
-    "fastify": "^5.8.2",
+    "fastify": "^5.8.5",
     "lucide-react": "^0.577.0",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
