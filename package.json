@@ -28,7 +28,7 @@
     "fastify": "^5.8.5",
     "lucide-react": "^0.577.0",
     "morgan": "^1.10.1",
-    "multer": "^2.1.1",
+    "multer": "^2.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0",
