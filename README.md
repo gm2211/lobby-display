@@ -24,7 +24,7 @@ There are three roles: **VIEWER** (read-only, for lobby screens), **EDITOR** (ca
 
 ## Local Development
 
-Requires Node.js 20+ and Docker.
+Requires Node.js 22+ and Docker.
 
 ```bash
 # Start Postgres
