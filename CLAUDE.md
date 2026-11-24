@@ -127,7 +127,7 @@ Monitor deploys after advancing a deploy branch (not after pushing to main):
 | `deploy.sh` | Core: `./deploy.sh <staging\|prod> <tag>` — advance a deploy branch |
 | `promote.sh` | Promote a tag to prod: `./promote.sh [tag]` (E2E gate enforced, `--force` to override) |
 | `rollback.sh` | Roll back: `./rollback.sh <staging\|prod> <tag>` |
-| `sync-data.sh` | Copy prod data → staging (column-intersection safe) |
+| `sync-data.sh` | Copy prod's published content → staging. Read-only on prod (VIEWER login + one GET via the API, never the prod DB). Dry run unless `--apply`. Also a GitHub Action: **Sync Prod Data → Staging** |
 
 ### Staging
 
@@ -135,8 +135,21 @@ Monitor deploys after advancing a deploy branch (not after pushing to main):
 - **DB:** `lobby-staging-db` (separate free-tier Postgres)
 
 ```bash
-DATABASE_URL="<connection-string>" ./sync-data.sh  # Copy prod data to staging
+PROD_SYNC_USER=<viewer> PROD_SYNC_PASS=<pass> \
+STAGING_DATABASE_URL="<staging external connection string>" ./sync-data.sh --apply
 ```
+
+Staging and prod are **separate databases**, so the sync reads prod through its API
+(`GET /api/snapshots/latest`) and writes staging's DB directly. It refuses any
+`STAGING_DATABASE_URL` whose database name lacks "staging". Uploaded images
+(`/images/uploads/*`) are rewritten to absolute prod URLs since they live on prod's disk.
+Staging users are not touched.
+
+### Previewing unmerged PRs on staging
+
+Staging only auto-deploys from `main`. To preview open PRs without merging, merge their
+branches into a throwaway branch and `./deploy.sh staging <that-branch>`. The next push to
+`main` overwrites it.
 
 ---
 

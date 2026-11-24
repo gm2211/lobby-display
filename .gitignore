@@ -49,3 +49,7 @@ cc-product-spec.zip
 # Dolt database files
 .dolt/
 *.db
+
+# Runtime uploads (tests write here too)
+public/images/uploads/*
+!public/images/uploads/.gitkeep

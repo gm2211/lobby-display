@@ -162,7 +162,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // RESTORE HELPER (eliminates duplication across discard/restore endpoints)
 // ============================================================================
 
-interface SnapshotData {
+export interface SnapshotData {
   config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
@@ -203,7 +203,7 @@ interface AdvisoryItem {
  *
  * @param data - Snapshot data in section-based format
  */
-async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
+export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
   await prisma.$transaction(async tx => {
     // Delete all current items
     await tx.service.deleteMany();

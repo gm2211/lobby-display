@@ -1,0 +1,44 @@
+name: Sync Prod Data → Staging
+
+# Copies prod's published dashboard content into the staging database.
+# Prod is read-only here: one authenticated GET via the public API (VIEWER account).
+# Never connects to the prod database. See scripts/sync-prod-to-staging.ts.
+#
+# Required repo secrets:
+#   PROD_SYNC_USER / PROD_SYNC_PASS  — a VIEWER account on prod
+#   STAGING_DATABASE_URL             — external connection string of lobby-staging-db
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Write to staging (unchecked = dry run)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - name: Sync
+        run: npx tsx scripts/sync-prod-to-staging.ts ${{ inputs.apply && '--apply' || '' }}
+        env:
+          PROD_URL: https://seven7-hudson-dashboard-r8ib.onrender.com
+          PROD_SYNC_USER: ${{ secrets.PROD_SYNC_USER }}
+          PROD_SYNC_PASS: ${{ secrets.PROD_SYNC_PASS }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
