@@ -7,6 +7,9 @@ name: Sync Prod Data → Staging
 # Required repo secrets:
 #   PROD_SYNC_USER / PROD_SYNC_PASS  — a VIEWER account on prod
 #   STAGING_DATABASE_URL             — external connection string of lobby-staging-db
+#
+# Run it: Actions tab → "Sync Prod Data → Staging" → Run workflow,
+# or push any commit to the ops/sync-staging branch.
 
 on:
   workflow_dispatch:
@@ -15,6 +18,10 @@ on:
         description: 'Write to staging (unchecked = dry run)'
         type: boolean
         default: true
+  # Pushing any commit to this branch also runs the sync (works before this
+  # workflow is on main, since workflow_dispatch only appears from main).
+  push:
+    branches: ['ops/sync-staging']
 
 permissions:
   contents: read
@@ -36,7 +43,7 @@ jobs:
       - run: npx prisma generate
 
       - name: Sync
-        run: npx tsx scripts/sync-prod-to-staging.ts ${{ inputs.apply && '--apply' || '' }}
+        run: npx tsx scripts/sync-prod-to-staging.ts ${{ (github.event_name == 'push' || inputs.apply) && '--apply' || '' }}
         env:
           PROD_URL: https://seven7-hudson-dashboard-r8ib.onrender.com
           PROD_SYNC_USER: ${{ secrets.PROD_SYNC_USER }}
