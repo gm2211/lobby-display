@@ -135,4 +135,62 @@ describe('Events API', () => {
     const res = await agent.get('/api/events');
     expect(res.body.map((e: { title: string }) => e.title)).toEqual(['First', 'Second', 'Third']);
   });
+
+  describe('POST /api/events/reorder', () => {
+    async function seed() {
+      return Promise.all(
+        ['A', 'B', 'C'].map((title, i) =>
+          testPrisma.event.create({ data: { title, subtitle: '', details: '[]', sortOrder: i } }),
+        ),
+      );
+    }
+
+    it('persists the new order as sortOrder 0..n-1', async () => {
+      const agent = await authenticatedAgent('EDITOR');
+      const [a, b, c] = await seed();
+
+      const res = await agent.post('/api/events/reorder').send({ ids: [c.id, a.id, b.id] });
+      expect(res.status).toBe(200);
+
+      const list = await agent.get('/api/events');
+      expect(list.body.map((e: { title: string }) => e.title)).toEqual(['C', 'A', 'B']);
+      expect(list.body.map((e: { sortOrder: number }) => e.sortOrder)).toEqual([0, 1, 2]);
+    });
+
+    it('marks the events section as changed in draft-status', async () => {
+      const agent = await authenticatedAgent();
+      const [a, b, c] = await seed();
+      await testPrisma.buildingConfig.create({ data: { dashboardTitle: 'Building Updates' } });
+      await agent.post('/api/snapshots').send({});
+      const before = await agent.get('/api/snapshots/draft-status');
+      expect(before.body.sectionChanges.events).toBe(false);
+
+      await agent.post('/api/events/reorder').send({ ids: [b.id, c.id, a.id] });
+      const after = await agent.get('/api/snapshots/draft-status');
+      expect(after.body.sectionChanges.events).toBe(true);
+    });
+
+    it('rejects invalid payloads with 400', async () => {
+      const agent = await authenticatedAgent();
+      const [a] = await seed();
+      for (const ids of [undefined, [], ['x'], [a.id, a.id], [1.5]]) {
+        const res = await agent.post('/api/events/reorder').send({ ids });
+        expect(res.status).toBe(400);
+      }
+    });
+
+    it('returns 404 when an id does not exist', async () => {
+      const agent = await authenticatedAgent();
+      const [a] = await seed();
+      const res = await agent.post('/api/events/reorder').send({ ids: [a.id, 999999] });
+      expect(res.status).toBe(404);
+    });
+
+    it('is forbidden for viewers', async () => {
+      const agent = await authenticatedAgent('VIEWER');
+      const [a, b] = await seed();
+      const res = await agent.post('/api/events/reorder').send({ ids: [b.id, a.id] });
+      expect(res.status).toBe(403);
+    });
+  });
 });

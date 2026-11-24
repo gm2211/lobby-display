@@ -61,7 +61,7 @@ src/
     Admin.tsx         # Content management UI
     Login.tsx         # Authentication page
   components/         # Header, ServiceTable, EventCard, AdvisoryTicker, AutoScrollCards, ProtectedRoute
-  components/admin/   # Section editors, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider
+  components/admin/   # Section editors, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider, useDragReorder
   constants/          # Shared constants (colors, defaults, status presets)
   contexts/           # AuthContext (session state)
   styles/             # Shared style objects

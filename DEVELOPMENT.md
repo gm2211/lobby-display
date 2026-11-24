@@ -72,6 +72,14 @@ export default createCrudRoutes<Event>({
 });
 ```
 
+### Drag-and-Drop Reordering
+
+For a model with a `sortOrder` column, pass `reorderable: true` to `createCrudRoutes` to expose
+`POST /reorder` with body `{ ids: number[] }` (sets `sortOrder` = index in one transaction).
+On the client, use `src/components/admin/useDragReorder.ts` (pointer events, so it works on
+touch screens; arrow keys on the handle also work). See `EventsSection.tsx` for the pattern.
+Don't send `sortOrder` in edit (PUT) bodies, or editing an item moves it.
+
 ### Custom Routes
 
 ```typescript
