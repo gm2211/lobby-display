@@ -21,7 +21,7 @@ function makeServices(count: number): Service[] {
 
 describe('ServiceTable', () => {
   it('renders column headers', () => {
-    render(<ServiceTable services={[]} />);
+    render(<ServiceTable services={makeServices(1)} />);
     expect(screen.getByText('Service')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Notes')).toBeInTheDocument();
@@ -82,15 +82,11 @@ describe('ServiceTable', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('handles empty service list', () => {
+  it('renders nothing (no header) when the service list is empty', () => {
     const { container } = render(<ServiceTable services={[]} scrollSpeed={0} />);
-    // Should render headers but no data rows
-    expect(screen.getByText('Service')).toBeInTheDocument();
-    const tbody = container.querySelector('tbody');
-    // Either no tbody (only header table) or empty tbody
-    if (tbody) {
-      expect(tbody.children).toHaveLength(0);
-    }
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText('Service')).toBeNull();
+    expect(screen.queryByText('Last Updated')).toBeNull();
   });
 
   it('renders correct number of page dots', () => {
