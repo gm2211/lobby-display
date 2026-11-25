@@ -71,6 +71,10 @@ export default function ServiceTable({ services, scrollSpeed = DEFAULTS.SERVICES
     paddedServices.push(null);
   }
 
+  // Nothing to show: hide the whole table, header included.
+  // (Must stay below all hooks so hook order is stable.)
+  if (totalRows === 0) return null;
+
   const colgroup = (
     <colgroup>
       <col style={{ width: COL_WIDTHS.service }} />
@@ -82,7 +86,7 @@ export default function ServiceTable({ services, scrollSpeed = DEFAULTS.SERVICES
 
   return (
     <div className="service-table-container" style={styles.container}>
-      {/* Header table - always visible */}
+      {/* Header table - visible whenever there is at least one service */}
       <table style={{ ...styles.table, tableLayout: 'fixed', marginBottom: 0 }}>
         {colgroup}
         <thead>
