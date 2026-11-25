@@ -42,6 +42,7 @@ If conversation exceeds **~150k tokens**, run `/compact` proactively before cont
 |------|------|
 | `markedForDeletion` vs `deletedAt` | `deletedAt` exists in the schema but is **vestigial** -- only use `markedForDeletion` for soft-deletion logic |
 | `Events.details` type | JSON string in DB, `string[]` via API transforms in `createCrudRoutes` |
+| Default theme | Empty `BuildingConfig.themePreset` (fresh DB) resolves to `DEFAULT_THEME_ID` in `shared/theme/registry.ts` (`77-hudson`, the prod teal theme). The `default` (slate blue) preset is only used when picked explicitly |
 | Preview mode | Dashboard accepts `?preview=true` query param for draft content |
 | SSE updates | Publish triggers real-time push via `server/sse.ts` |
 | Snapshots | See `server/routes/snapshots.ts` header comment for draft/publish workflow |
