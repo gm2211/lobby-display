@@ -128,8 +128,8 @@ function buildStyleBlock(colors: ThemeColors, fontFamily: string): string {
 
 async function generateThemeData(): Promise<CacheEntry> {
   const config = await prisma.buildingConfig.findFirst();
-  const themePreset = config?.themePreset || 'default';
-  const baseTheme = loadTheme(themePreset);
+  // Empty themePreset falls back to DEFAULT_THEME_ID (77 Hudson) inside loadTheme
+  const baseTheme = loadTheme(config?.themePreset);
 
   const { colors, fontFamily } = applyConfigOverrides(
     baseTheme,

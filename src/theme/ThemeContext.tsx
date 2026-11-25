@@ -2,7 +2,7 @@
  * ThemeContext — Default Theme with Runtime Overrides
  *
  * Provides the active TenantTheme to the component tree.
- * Uses the default theme as client-side fallback; in production the server
+ * Uses DEFAULT_THEME_ID (77 Hudson) as client-side fallback; in production the server
  * injects correct CSS variables before first paint (see server/themeCSS.ts).
  * Runtime overrides from BuildingConfig (colorPrimary, colorSecondary, fontFamily)
  * are applied on top.
@@ -19,7 +19,7 @@ import { loadTheme } from '../../shared/theme/registry';
 import type { TenantTheme, ThemeColors } from '../../shared/theme/types';
 import { generatePalette } from '../../shared/theme/colorUtils';
 
-const compiledTheme = loadTheme('default');
+const compiledTheme = loadTheme(); // DEFAULT_THEME_ID (77 Hudson)
 
 const ThemeContext = createContext<TenantTheme | null>(null);
 
