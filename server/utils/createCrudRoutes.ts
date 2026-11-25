@@ -11,6 +11,7 @@
  * - PUT /:id      - Update item by ID
  * - DELETE /:id   - Mark item for deletion (soft delete)
  * - POST /:id/unmark - Unmark item for deletion
+ * - POST /reorder - Set sortOrder from an ordered list of IDs (only when `reorderable: true`)
  *
  * USAGE:
  * ```typescript
@@ -35,7 +36,7 @@
  */
 import { Router } from 'express';
 import prisma from '../db.js';
-import { asyncHandler, validateId, NotFoundError } from '../middleware/errorHandler.js';
+import { asyncHandler, validateId, NotFoundError, ValidationError } from '../middleware/errorHandler.js';
 
 type PrismaModel = 'service' | 'event' | 'advisory';
 
@@ -50,6 +51,8 @@ interface CrudOptions<T> {
   transformUpdate?: (data: Record<string, unknown>) => Record<string, unknown>;
   /** Transform items after fetching (e.g., parse JSON fields) */
   transformGet?: (item: T) => T;
+  /** Expose POST /reorder (model must have a `sortOrder` column) */
+  reorderable?: boolean;
 }
 
 /**
@@ -65,6 +68,7 @@ export function createCrudRoutes<T>(options: CrudOptions<T>): Router {
     transformCreate = (d) => d,
     transformUpdate = (d) => d,
     transformGet = (item) => item,
+    reorderable = false,
   } = options;
 
   const router = Router();
@@ -99,6 +103,40 @@ export function createCrudRoutes<T>(options: CrudOptions<T>): Router {
       res.json(transformGet(item as T));
     })
   );
+
+  /**
+   * POST /reorder - Persist a new display order
+   * Body: { ids: number[] } in the desired order. Each listed item gets
+   * sortOrder = its index. All IDs must exist; written in one transaction.
+   * Registered before the /:id routes so "reorder" is never parsed as an ID.
+   */
+  if (reorderable) {
+    router.post(
+      '/reorder',
+      asyncHandler(async (req, res) => {
+        const ids: unknown = req.body?.ids;
+        if (
+          !Array.isArray(ids) ||
+          ids.length === 0 ||
+          !ids.every(id => Number.isInteger(id) && (id as number) > 0) ||
+          new Set(ids).size !== ids.length
+        ) {
+          throw new ValidationError('ids must be a non-empty array of unique positive integers');
+        }
+        const numericIds = ids as number[];
+        const existing = await getModel().count({ where: { id: { in: numericIds } } });
+        if (existing !== numericIds.length) {
+          throw new NotFoundError('One or more items not found');
+        }
+        await prisma.$transaction(
+          numericIds.map((id, index) =>
+            getModel().update({ where: { id }, data: { sortOrder: index } }),
+          ),
+        );
+        res.json({ ok: true });
+      })
+    );
+  }
 
   /**
    * PUT /:id - Update item by ID

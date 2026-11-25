@@ -10,6 +10,7 @@
  * - PUT /api/events/:id - Update event (details stringified if present)
  * - DELETE /api/events/:id - Mark for deletion
  * - POST /api/events/:id/unmark - Undo mark for deletion
+ * - POST /api/events/reorder - Persist drag-and-drop order ({ ids: number[] })
  *
  * GOTCHAS / AI AGENT NOTES:
  * - The `details` field is stored as JSON string in the database
@@ -53,4 +54,5 @@ export default createCrudRoutes<Event>({
   transformCreate,
   transformUpdate,
   transformGet: parseEventDetails,
+  reorderable: true,
 });

@@ -11,6 +11,8 @@
  * - Delete marks items for deletion (soft delete until publish)
  * - Yellow highlight on changed items
  * - Title is required (shows validation error with shake animation)
+ * - Drag the ⋮⋮ handle (mouse or touch) or use arrow keys on it to reorder;
+ *   order is saved via POST /api/events/reorder and goes live on publish
  *
  * PROPS:
  * - events: Current event list
@@ -24,6 +26,7 @@
  * - ImagePicker and MarkdownEditor are extracted components
  * - Preview modal shows EventCardPreview component
  * - shake/field-error CSS classes defined in Admin.tsx
+ * - Editing must NOT send sortOrder, or the event would jump to the end
  *
  * RELATED FILES:
  * - src/pages/Admin.tsx - Parent component
@@ -47,6 +50,7 @@ import { ImagePicker } from '../ImagePicker';
 import { MarkdownEditor } from '../MarkdownEditor';
 import { EventCardPreview } from '../EventCardPreview';
 import { SpeedSlider } from '../SpeedSlider';
+import { useDragReorder } from '../useDragReorder';
 
 interface EventsSectionProps {
   /** Current event list */
@@ -79,6 +83,14 @@ export function EventsSection({
 
   const isFormOpen = formExpanded || editingId !== null;
 
+  const saveOrder = (ordered: Event[]) => {
+    const updated = ordered.map((e, i) => ({ ...e, sortOrder: i }));
+    // On failure, resync from the server so the list shows the real order
+    api.post('/api/events/reorder', { ids: updated.map(e => e.id) }).catch(() => onSave());
+    onSave({ events: updated });
+  };
+  const { items: orderedEvents, draggingId, rowRef, handleProps } = useDragReorder(events, saveOrder);
+
   const markForDeletion = (id: number) => {
     const updated = events.map(e => e.id === id ? { ...e, markedForDeletion: true } : e);
     api.del(`/api/events/${id}`);
@@ -104,7 +116,6 @@ export function EventsSection({
       subtitle: form.subtitle,
       details: form.details.split('\n').filter(Boolean),
       imageUrl: form.imageUrl,
-      sortOrder: events.length,
     };
     if (editingId) {
       const updated = events.map(e => e.id === editingId ? { ...e, title: body.title, subtitle: body.subtitle, details: body.details, imageUrl: body.imageUrl } : e);
@@ -112,7 +123,8 @@ export function EventsSection({
       onSave({ events: updated });
     } else {
       // New item — can't predict ID, so await and sync
-      await api.post('/api/events', body);
+      const sortOrder = events.reduce((max, e) => Math.max(max, e.sortOrder + 1), 0);
+      await api.post('/api/events', { ...body, sortOrder });
       onSave();
     }
     setForm(empty);
@@ -242,14 +254,14 @@ export function EventsSection({
       {/* Events List */}
       {events.length > 0 && (
         <div style={listHeaderStyle}>
-          <span>Current Events</span>
+          <span>Current Events{events.length > 1 && <span style={{ fontWeight: 400, color: '#888' }}> · drag ⋮⋮ to reorder</span>}</span>
           <span style={{ fontSize: '11px', color: '#666' }}>
             {events.length} item{events.length !== 1 ? 's' : ''}
           </span>
         </div>
       )}
       <div>
-        {events.map(e => {
+        {orderedEvents.map(e => {
           const pub = publishedEvents?.find(pe => pe.id === e.id);
           const isNewDraft = !pub;
           const isMarkedForDeletion = e.markedForDeletion;
@@ -265,8 +277,12 @@ export function EventsSection({
           return (
             <div
               key={e.id}
+              ref={rowRef(e.id)}
               style={{
                 ...listCardStyle,
+                ...(draggingId === e.id
+                  ? { boxShadow: '0 6px 16px rgba(0,0,0,0.18)', background: '#fff', position: 'relative', zIndex: 1 }
+                  : {}),
                 ...(isMarkedForDeletion
                   ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
                   : {}),
@@ -282,6 +298,14 @@ export function EventsSection({
                   ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
                 }}
               >
+                {events.length > 1 && (
+                  <span
+                    {...handleProps(e.id)}
+                    style={{ ...handleProps(e.id).style, color: '#aaa', fontSize: '18px', lineHeight: 1, padding: '4px 2px', flexShrink: 0, textDecoration: 'none' }}
+                  >
+                    ⋮⋮
+                  </span>
+                )}
                 {isNewDraft && !isMarkedForDeletion && (
                   <span style={draftIndicatorStyle} title="New draft item">
                     ●
