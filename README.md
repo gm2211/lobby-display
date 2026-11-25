@@ -73,7 +73,7 @@ tests/
   api/                # API + DB integration tests
   component/          # React component tests (jsdom)
   unit/               # Pure unit tests (apiClient, markdown, timeAgo)
-scripts/              # Render build/start scripts
+scripts/              # Render build/start scripts, sync-prod-to-staging.ts (prod → staging data copy)
 ```
 
 ## Development

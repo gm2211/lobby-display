@@ -3,6 +3,10 @@ databases:
     plan: basic-256mb
     databaseName: lobby
 
+  # Free plan: Render expires free Postgres after 30 days and later deletes it.
+  # When that happens, staging crash-loops (P1001 "Can't reach database server").
+  # Recreate it by syncing this Blueprint (Render → Blueprints → Manual sync,
+  # or any commit that changes this file), then re-run ./sync-data.sh --apply.
   - name: hudson-dashboard-staging-db
     plan: free
     databaseName: lobby_staging
