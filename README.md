@@ -63,7 +63,7 @@ src/
     Admin.css         # Admin layout: sticky header, fixed iPhone tab bar, desktop side panel
     Login.tsx         # Authentication page
   components/         # Header, ServiceTable, EventCard, AdvisoryTicker, AutoScrollCards, ProtectedRoute
-  components/admin/   # Section editors, AdminTabs, ChangesPanel, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider, useDragReorder
+  components/admin/   # Section editors, AdminTabs, ChangesPanel, ImagePicker, MarkdownEditor, SnapshotHistory (History "time machine" page), SpeedSlider, useDragReorder
   constants/          # Shared constants (colors, defaults, status presets)
   contexts/           # AuthContext (session state)
   styles/             # Shared style objects (editorCard.ts: admin list cards + action bars)

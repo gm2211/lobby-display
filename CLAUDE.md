@@ -63,6 +63,7 @@ If conversation exceeds **~150k tokens**, run `/compact` proactively before cont
 | Client IP | Behind Render the client IP comes from `X-Forwarded-For`. Default trusts the left-most entry (client-controlled); set `TRUST_PROXY_HOPS` to the real proxy count to fix it. Login also has a per-username limit because of this |
 | E2E runner | `e2e-staging.yml` is pinned to `ubuntu-24.04`. `ubuntu-latest` moved to a release Playwright 1.58 can't install browsers on, and every run failed before any test |
 | Admin tabs | The admin page scrolls the **window**; sections stay mounted and inactive tabs are `hidden`. Don't add an inner scroll container or unmount tabs (breaks iOS Safari's bars, per-tab scroll memory and open edit forms). New admin sections go into a tab in `Admin.tsx`. Never set `viewport-fit=cover` on admin: iOS Safari then shows content above the sticky header, behind its floating toolbar See DEVELOPMENT.md "Admin layout: tabs" |
+| History page | Full-screen overlay (`SnapshotHistory.tsx`) with its own inner scroller (`.tm-scroll`) and fixed header/scrubber/tray. That is the only exception to the window-scroll rule in admin, because it sits on top of the editor. Its "now" is the draft, not the live snapshot. See DEVELOPMENT.md "History page" |
 | Error responses | 5xx responses never include the raw error message (Prisma leaks schema/SQL). Throw `ValidationError` / `NotFoundError` for anything a user should read; common Prisma errors are mapped to 400/404/409 in `errorHandler` |
 
 ---

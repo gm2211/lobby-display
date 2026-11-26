@@ -68,6 +68,16 @@ icons in `src/components/admin/EditorIcons.tsx`:
   The status cell is `<StatusSelect variant="bar">`, a native `<select>` laid invisibly over the
   whole cell so the full 44px target opens the iOS picker.
 
+### History page ("time machine")
+
+`src/components/admin/SnapshotHistory.tsx` (+ `.css`), opened from the header's History button (⋯ menu on iPhone). It is a full-screen layer over the editor, not a tab:
+
+- **Header + scrubber** (◀ vN ▶ and a slider with one dot per publish, green dot = live) and the **tray** (Back to live · Restore vN) never move. Only `.tm-scroll` scrolls. This is the one inner scroller in admin, allowed because it is an overlay; the editor underneath keeps its window scroll and mounted tabs, and body scroll is locked while History is open.
+- Opens on the version **before** live. ← / → step older / newer, Esc closes.
+- The lobby preview is the real dashboard (`/?snapshot=N`) in an iframe rendered at 1280×720 and scaled to fit, with an "Open full size" link.
+- "Different from now" comes from `GET /api/snapshots/:v/diff/draft` ("now" = the draft, so a fixed row disappears at once). `buildRows()` maps it to rows: **Only then** → Use this (`restore-items`), **Different** → Use this, **Not then** → Remove (soft delete, shows as Removing in the editor), **Removing** → Keep (`/:id/unmark`). Settings rows have no per-item action; they come back with Restore vN.
+- Everything changes the draft only. Delete one version / delete all old versions live in the History ⋯ menu.
+
 ### Optimistic writes (keep the admin snappy)
 
 For edits whose result you can predict (delete, undo, status, notes, settings), fire the
