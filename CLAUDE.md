@@ -49,6 +49,14 @@ If conversation exceeds **~150k tokens**, run `/compact` proactively before cont
 | Snapshots | See `server/routes/snapshots.ts` header comment for draft/publish workflow |
 | Role-based access | GETs require auth only (any role). Mutations (POST/PUT/DELETE) require `EDITOR` or `ADMIN`. See `dashboardProtect` in `server/app.ts` |
 | CSRF | All state-changing `/api/*` requests require a CSRF token via `server/middleware/csrf.ts` |
+| Config writes | `PUT /api/config` only accepts the fields in `FIELD_RULES` (`server/routes/config.ts`); unknown keys are ignored. **New `BuildingConfig` column = new rule**, or the API silently drops it. Never pass `req.body` straight to Prisma there |
+| Theme values in HTML | `fontFamily` / `colorPrimary` / `colorSecondary` are injected into a server-rendered `<style>` block. They go through the allow-lists in `shared/theme/safeCss.ts` on write **and** on render (`server/themeCSS.ts`). Don't interpolate other config text into the page without escaping |
+| Sessions vs. users | `server/middleware/sessionUser.ts` re-checks the user on every request: deleted user or changed password = logged out, role change applies at once. Don't cache role decisions outside `req.session.user` |
+| Lobby (VIEWER) cookie | express-session only re-sends the cookie when session **data** changes, so the keep-alive in `server/app.ts` stamps `lastRefreshAt` daily. Changing `cookie.maxAge` alone does nothing for the browser |
+| Uploads | Stored extension comes from the validated MIME type, never the client filename. Files live in `public/images/uploads` (not in `dist/`) and are served by a dedicated static route in `server/app.ts`. Render's disk is ephemeral: uploads are lost on every deploy unless a persistent disk is attached |
+| Restoring snapshots | Never delete + recreate `Service` rows: `ServiceStatusLog` cascades and Metrics history is lost. Use `upsertService()` in `server/routes/snapshots.ts` |
+| Demo seed | `seedIfEmpty()` (`server/index.ts`) only runs on a never-used DB (no snapshots, no content, no config). An empty services list is a valid state, not a reason to seed |
+| Error responses | 5xx responses never include the raw error message (Prisma leaks schema/SQL). Throw `ValidationError` / `NotFoundError` for anything a user should read; common Prisma errors are mapped to 400/404/409 in `errorHandler` |
 
 ---
 

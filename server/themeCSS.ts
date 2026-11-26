@@ -11,6 +11,7 @@
 import prisma from './db.js';
 import { loadTheme } from '../shared/theme/registry.js';
 import { generatePalette } from '../shared/theme/colorUtils.js';
+import { isHexColor, isSafeFontFamily } from '../shared/theme/safeCss.js';
 import type { TenantTheme, ThemeColors } from '../shared/theme/types.js';
 
 interface CacheEntry {
@@ -34,7 +35,9 @@ function applyConfigOverrides(
 ): { colors: ThemeColors; fontFamily: string } {
   const colors = { ...base.colors };
 
-  if (colorPrimary) {
+  // Stored values are re-validated here: this output is injected into a <style> block,
+  // so an unsafe value (e.g. one containing `</style>`) must fall back to the preset.
+  if (isHexColor(colorPrimary)) {
     const p = generatePalette(colorPrimary);
     const keys: (keyof ThemeColors)[] = [
       'primary50','primary100','primary200','primary300','primary400',
@@ -46,7 +49,7 @@ function applyConfigOverrides(
     colors.headerGradientEnd = p['700'];
   }
 
-  if (colorSecondary) {
+  if (isHexColor(colorSecondary)) {
     const s = generatePalette(colorSecondary);
     const keys: (keyof ThemeColors)[] = [
       'secondary50','secondary100','secondary200','secondary300','secondary400',
@@ -58,7 +61,7 @@ function applyConfigOverrides(
 
   return {
     colors,
-    fontFamily: fontFamily || base.fontFamily,
+    fontFamily: isSafeFontFamily(fontFamily) ? fontFamily : base.fontFamily,
   };
 }
 
@@ -126,8 +129,10 @@ function buildStyleBlock(colors: ThemeColors, fontFamily: string): string {
   return `<style id="server-theme">:root { ${vars.join('; ')} }</style>`;
 }
 
+export { applyConfigOverrides, buildStyleBlock };
+
 async function generateThemeData(): Promise<CacheEntry> {
-  const config = await prisma.buildingConfig.findFirst();
+  const config = await prisma.buildingConfig.findFirst({ orderBy: { id: 'asc' } });
   // Empty themePreset falls back to DEFAULT_THEME_ID (77 Hudson) inside loadTheme
   const baseTheme = loadTheme(config?.themePreset);
 

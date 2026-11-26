@@ -672,6 +672,60 @@ requirements:
       table pages at the new speed on the dashboard.
     evidence_format: "Screenshots of speed configuration and dashboard behavior."
 
+  - id: req-access-revocation
+    description: >
+      Removing a user, changing their password or lowering their role takes effect on
+      their existing sessions immediately. The last ADMIN account cannot be demoted or
+      deleted. Passwords set through the app are at least 8 characters.
+    verification: agent
+    validation_plan: >
+      1. Log in as an EDITOR in one browser. 2. As ADMIN, delete that user. 3. In the
+      editor's browser, reload: it lands on /login. 4. As the only ADMIN, try to change
+      your own role to EDITOR: an error says another admin is needed first.
+    evidence_format: "Screenshots of the login redirect and the last-admin error."
+
+  - id: req-lobby-screen-stays-signed-in
+    description: >
+      A VIEWER (lobby screen) session lasts a year and is renewed while the screen is in
+      use, so lobby displays do not drop to the login page after a week.
+    verification: agent
+    validation_plan: >
+      1. Log in as a VIEWER. 2. Inspect the connect.sid cookie: it expires about one
+      year from now.
+    evidence_format: "Cookie expiry from the login response."
+
+  - id: req-uploaded-images-display
+    description: >
+      An image uploaded in the event editor is stored with an image file extension and
+      is displayed on the event card (served from /images/uploads as an image).
+    verification: agent
+    validation_plan: >
+      1. Open admin, add an event, choose 'Upload file...' and pick a PNG. 2. Verify the
+      card preview shows the image. 3. Open the returned /images/uploads/... URL: it is
+      served with an image content type.
+    evidence_format: "Screenshot of the event card with the uploaded image."
+
+  - id: req-discard-keeps-service-history
+    description: >
+      Discarding draft changes or restoring a version does not erase the service status
+      history shown on the Metrics page, and never empties the draft for old-format
+      versions.
+    verification: agent
+    validation_plan: >
+      1. Change a service status twice. 2. Publish. 3. Change it again and Discard.
+      4. Open Metrics: the earlier status changes are still listed.
+    evidence_format: "Screenshot of the Metrics timeline after a discard."
+
+  - id: req-empty-content-stays-empty
+    description: >
+      Demo content is only added to a brand-new database. A building that has removed
+      all its services does not get demo services or events back after a restart.
+    verification: agent
+    validation_plan: >
+      1. Delete every service and publish. 2. Restart the server. 3. Open admin: the
+      services list is still empty and there are no unpublished changes.
+    evidence_format: "Screenshot of the admin page after the restart."
+
 assumptions:
   - type: url_reachable
     url: "${TARGET_BASE_URL}"

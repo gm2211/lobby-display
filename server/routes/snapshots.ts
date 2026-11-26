@@ -39,6 +39,8 @@
  * - markedForDeletion is used for soft-delete (hard-deleted on publish)
  * - Events.details is JSON string in DB, parsed/stringified in code
  * - Restoration uses createMany for batch inserts (preserves IDs)
+ * - Restores must NOT delete + recreate services: ServiceStatusLog cascades on delete
+ *   and the Metrics history would be lost. Use upsertService().
  * - Always broadcast after publishing to notify connected clients
  *
  * RELATED FILES:
@@ -68,7 +70,7 @@ async function getCurrentState() {
     prisma.service.findMany({ orderBy: { sortOrder: 'asc' } }),
     prisma.event.findMany({ orderBy: { sortOrder: 'asc' } }),
     prisma.advisory.findMany(),
-    prisma.buildingConfig.findFirst(),
+    prisma.buildingConfig.findFirst({ orderBy: { id: 'asc' } }),
   ]);
 
   return {
@@ -169,6 +171,7 @@ export interface SnapshotData {
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
+  // NOTE: very old snapshots hold plain arrays here instead; read items via sectionItems().
 }
 
 interface ServiceItem {
@@ -204,40 +207,64 @@ interface AdvisoryItem {
 }
 
 /**
- * Restore database state from snapshot data.
- * Deletes all current items and recreates from snapshot.
+ * Items of a snapshot section. Old snapshots stored each section as a plain array
+ * (legacy flat format); newer ones use `{ items, ...settings }`.
+ */
+function sectionItems<T>(section: { items?: T[] } | T[] | null | undefined): T[] {
+  if (Array.isArray(section)) return section;
+  return section?.items ?? [];
+}
+
+type ServiceWriter = Pick<typeof prisma, 'service'>;
+
+/**
+ * Write a snapshot's service row without deleting it first. Service has a cascading
+ * relation to ServiceStatusLog, so delete + recreate would wipe the status history
+ * that the Metrics page is built on.
+ */
+async function upsertService(tx: ServiceWriter, s: ServiceItem): Promise<void> {
+  const fields = {
+    name: s.name,
+    status: s.status,
+    notes: s.notes || '',
+    sortOrder: s.sortOrder,
+    lastChecked: new Date(s.lastChecked),
+    markedForDeletion: false,
+  };
+  await tx.service.upsert({ where: { id: s.id }, create: { id: s.id, ...fields }, update: fields });
+}
+
+/**
+ * Restore database state (the draft) from snapshot data.
+ * Events and advisories are deleted and recreated; services are updated in place
+ * so their status history survives.
  *
- * @param data - Snapshot data in section-based format
+ * @param data - Snapshot data (section-based, or the legacy flat format)
  */
 export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
+  const services = sectionItems(data.services);
+  const events = sectionItems(data.events);
+  const advisories = sectionItems(data.advisories);
+
   await prisma.$transaction(async tx => {
-    // Delete all current items
-    await tx.service.deleteMany();
+    // Services are updated in place (see upsertService); only ones absent from the
+    // snapshot are removed.
+    await tx.service.deleteMany({ where: { id: { notIn: services.map(s => s.id) } } });
+    for (const s of services) {
+      await upsertService(tx, s);
+    }
+
     await tx.event.deleteMany();
     await tx.advisory.deleteMany();
 
-    // Restore services
-    if (data.services?.items?.length) {
-      await tx.service.createMany({
-        data: data.services.items.map(s => ({
-          id: s.id,
-          name: s.name,
-          status: s.status,
-          notes: s.notes || '',
-          sortOrder: s.sortOrder,
-          lastChecked: new Date(s.lastChecked),
-        })),
-      });
-    }
-
     // Restore events
-    if (data.events?.items?.length) {
+    if (events.length) {
       await tx.event.createMany({
-        data: data.events.items.map(e => ({
+        data: events.map(e => ({
           id: e.id,
           title: e.title,
           subtitle: e.subtitle,
-          details: JSON.stringify(e.details),
+          details: JSON.stringify(e.details ?? []),
           imageUrl: e.imageUrl,
           accentColor: e.accentColor,
           sortOrder: e.sortOrder,
@@ -247,9 +274,9 @@ export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
     }
 
     // Restore advisories
-    if (data.advisories?.items?.length) {
+    if (advisories.length) {
       await tx.advisory.createMany({
-        data: data.advisories.items.map(a => ({
+        data: advisories.map(a => ({
           id: a.id,
           message: a.message,
           active: a.active,
@@ -258,7 +285,7 @@ export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
     }
 
     // Restore config
-    const existing = await tx.buildingConfig.findFirst();
+    const existing = await tx.buildingConfig.findFirst({ orderBy: { id: 'asc' } });
     if (existing) {
       await tx.buildingConfig.update({
         where: { id: existing.id },
@@ -645,7 +672,7 @@ router.post(
 
 // POST /api/snapshots/restore/:version - Full restore to version
 router.post(
-  '/restore/:version',
+  '/restore/:version(\\d+)',
   asyncHandler(async (req, res) => {
     const version = Number(req.params.version);
     const snapshot = await prisma.publishedSnapshot.findUnique({ where: { version } });
@@ -664,14 +691,26 @@ router.post(
 router.post(
   '/restore-items',
   asyncHandler(async (req, res) => {
-    const { sourceVersion, items } = req.body as {
-      sourceVersion: number;
-      items: { services?: number[]; events?: number[]; advisories?: number[] };
+    const body = (req.body ?? {}) as {
+      sourceVersion?: unknown;
+      items?: { services?: unknown; events?: unknown; advisories?: unknown };
     };
-
-    if (!sourceVersion) {
-      throw new ValidationError('sourceVersion is required');
+    const sourceVersion = Number(body.sourceVersion);
+    if (!Number.isInteger(sourceVersion) || sourceVersion <= 0) {
+      throw new ValidationError('sourceVersion must be a snapshot version number');
     }
+    const idList = (value: unknown, name: string): number[] => {
+      if (value === undefined) return [];
+      if (!Array.isArray(value) || !value.every(id => Number.isInteger(id))) {
+        throw new ValidationError(`items.${name} must be an array of item IDs`);
+      }
+      return value as number[];
+    };
+    const wanted = {
+      services: idList(body.items?.services, 'services'),
+      events: idList(body.items?.events, 'events'),
+      advisories: idList(body.items?.advisories, 'advisories'),
+    };
 
     const snapshot = await prisma.publishedSnapshot.findUnique({ where: { version: sourceVersion } });
     if (!snapshot) {
@@ -679,67 +718,51 @@ router.post(
     }
 
     const data = JSON.parse(snapshot.data) as SnapshotData;
+    const source = {
+      services: sectionItems(data.services),
+      events: sectionItems(data.events),
+      advisories: sectionItems(data.advisories),
+    };
     const restoredItems = { services: [] as number[], events: [] as number[], advisories: [] as number[] };
 
     await prisma.$transaction(async tx => {
-      // Restore selected services
-      if (items.services?.length) {
-        for (const id of items.services) {
-          const service = data.services?.items?.find(s => s.id === id);
-          if (service) {
-            await tx.service.deleteMany({ where: { id } });
-            await tx.service.create({
-              data: {
-                id: service.id,
-                name: service.name,
-                status: service.status,
-                notes: service.notes || '',
-                sortOrder: service.sortOrder,
-                lastChecked: new Date(service.lastChecked),
-              },
-            });
-            restoredItems.services.push(id);
-          }
+      for (const id of wanted.services) {
+        const service = source.services.find(s => s.id === id);
+        if (service) {
+          await upsertService(tx, service);
+          restoredItems.services.push(id);
         }
       }
 
-      // Restore selected events
-      if (items.events?.length) {
-        for (const id of items.events) {
-          const event = data.events?.items?.find(e => e.id === id);
-          if (event) {
-            await tx.event.deleteMany({ where: { id } });
-            await tx.event.create({
-              data: {
-                id: event.id,
-                title: event.title,
-                subtitle: event.subtitle,
-                details: JSON.stringify(event.details),
-                imageUrl: event.imageUrl,
-                accentColor: event.accentColor,
-                sortOrder: event.sortOrder,
-              },
-            });
-            restoredItems.events.push(id);
-          }
+      for (const id of wanted.events) {
+        const event = source.events.find(e => e.id === id);
+        if (event) {
+          await tx.event.deleteMany({ where: { id } });
+          await tx.event.create({
+            data: {
+              id: event.id,
+              title: event.title,
+              subtitle: event.subtitle,
+              details: JSON.stringify(event.details ?? []),
+              imageUrl: event.imageUrl,
+              accentColor: event.accentColor,
+              sortOrder: event.sortOrder,
+              // Keep the original go-live time so a restored event isn't badged NEW again
+              firstPublishedAt: event.firstPublishedAt ? new Date(event.firstPublishedAt) : null,
+            },
+          });
+          restoredItems.events.push(id);
         }
       }
 
-      // Restore selected advisories
-      if (items.advisories?.length) {
-        for (const id of items.advisories) {
-          const advisory = data.advisories?.items?.find(a => a.id === id);
-          if (advisory) {
-            await tx.advisory.deleteMany({ where: { id } });
-            await tx.advisory.create({
-              data: {
-                id: advisory.id,
-                message: advisory.message,
-                active: advisory.active,
-              },
-            });
-            restoredItems.advisories.push(id);
-          }
+      for (const id of wanted.advisories) {
+        const advisory = source.advisories.find(a => a.id === id);
+        if (advisory) {
+          await tx.advisory.deleteMany({ where: { id } });
+          await tx.advisory.create({
+            data: { id: advisory.id, message: advisory.message, active: advisory.active },
+          });
+          restoredItems.advisories.push(id);
         }
       }
     });

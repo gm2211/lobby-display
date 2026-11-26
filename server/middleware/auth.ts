@@ -6,6 +6,8 @@ declare module 'express-session' {
   interface SessionData {
     user?: { id: number; username: string; role: Role };
     csrfToken?: string;
+    /** Fingerprint of the password hash at login; see middleware/sessionUser.ts */
+    passwordVersion?: string;
     lastRefreshAt?: number;
   }
 }
