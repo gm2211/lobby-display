@@ -15,7 +15,7 @@ jobs:
     # ubuntu-latest moved to a release the pinned Playwright does not support, and every
     # run failed at "Install Playwright browsers" before any test ran.
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v5
@@ -32,21 +32,27 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Wait for staging deploy
+        # After a push to main, Render needs a few minutes to build. /api/health answers
+        # from the OLD build the whole time, so also wait until /api/version reports the
+        # commit that was just deployed (RENDER_GIT_COMMIT, see scripts/render-build.sh).
+        # Nightly and manual runs have no expected commit and only wait for health.
         run: |
-          echo "Waiting for staging to be ready..."
-          for i in $(seq 1 30); do
+          echo "Waiting for staging to be ready (expected commit: ${EXPECTED_SHA:-any})..."
+          for i in $(seq 1 60); do
             STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$E2E_BASE_URL/api/health" || true)
-            if [ "$STATUS" = "200" ]; then
-              echo "Staging is ready!"
+            HASH=$(curl -s "$E2E_BASE_URL/api/version" | sed -n 's/.*"hash":"\([^"]*\)".*/\1/p' || true)
+            if [ "$STATUS" = "200" ] && { [ -z "$EXPECTED_SHA" ] || [ "$HASH" = "$EXPECTED_SHA" ]; }; then
+              echo "Staging is ready on ${HASH:-unknown}."
               exit 0
             fi
-            echo "Attempt $i/30 - status $STATUS, retrying in 10s..."
+            echo "Attempt $i/60 - health $STATUS, version ${HASH:-unknown}, retrying in 10s..."
             sleep 10
           done
-          echo "Staging did not become ready in time"
+          echo "Staging did not come up on ${EXPECTED_SHA:-a healthy build} in time (last seen: ${HASH:-unknown})"
           exit 1
         env:
           E2E_BASE_URL: https://seven7-hudson-staging.onrender.com
+          EXPECTED_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
 
       - name: Run E2E tests
         run: npx playwright test --config=e2e/playwright.config.ts
