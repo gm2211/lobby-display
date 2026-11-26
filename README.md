@@ -65,7 +65,7 @@ src/
   components/admin/   # Section editors, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider, useDragReorder
   constants/          # Shared constants (colors, defaults, status presets)
   contexts/           # AuthContext (session state)
-  styles/             # Shared style objects
+  styles/             # Shared style objects (editorCard.ts: admin list cards + action bars)
   types.ts            # TypeScript interfaces
   utils/              # API client, markdown parser, timeAgo
 prisma/

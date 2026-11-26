@@ -3,10 +3,14 @@
  *
  * PURPOSE:
  * Manages dashboard event cards (announcements, updates).
- * Shows a card list with edit/preview capabilities.
+ * Shows a single-column list of cards (all widths, so order is easy to read).
+ * Each card: drag handle, title, 2-line subtitle, status chips (New / Draft /
+ * Edited / Removing), and a full-width action bar: Edit · Preview · Copy · Delete.
+ * Card/bar/chip styles live in src/styles/editorCard.ts (shared with Services).
  *
  * BEHAVIOR:
- * - Add/edit events via expandable form with markdown editor
+ * - "+ Add New Event" (and Copy) open the form at the top of the section;
+ *   Edit opens the same form in place, inside that event's card
  * - Preview events as they'll appear on dashboard
  * - Delete marks items for deletion (soft delete until publish)
  * - Yellow highlight on changed items
@@ -35,17 +39,22 @@
  * - src/components/admin/ImagePicker.tsx - Image selector
  * - src/components/admin/EventCardPreview.tsx - Card preview
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Event, BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { DEFAULTS } from '../../../constants';
 import {
-  smallBtn, smallBtnDanger, smallBtnSuccess, smallBtnPrimary, smallBtnInfo,
-  btn, modalOverlay,
+  smallBtn, btn, modalOverlay,
   inputStyle, sectionStyle, sectionChangedStyle, formGroupStyle,
-  formLabelStyle, listHeaderStyle, listCardStyle,
-  markedForDeletionStyle, itemChangedStyle, draftIndicatorStyle,
+  formLabelStyle, listHeaderStyle,
+  editorCardStyle, editorCardChangedStyle, editorCardDeletedStyle, editorCardTopStyle,
+  editorCardHandleStyle, editorCardBodyStyle, editorCardTitleStyle, editorCardTextStyle,
+  editorCardMetaStyle, actionBarStyle, actionBarButtonStyle, actionBarButtonFirstStyle,
+  actionBarPrimaryStyle, actionBarDangerStyle, actionBarUndoStyle,
+  chipStyle, chipNewStyle, chipDraftStyle, chipEditedStyle, chipRemovingStyle,
 } from '../../../styles';
+import { isEventNew } from '../../../../shared/newBadge';
+import { EditIcon, PreviewIcon, CopyIcon, TrashIcon, UndoIcon } from '../EditorIcons';
 import { ImagePicker } from '../ImagePicker';
 import { MarkdownEditor } from '../MarkdownEditor';
 import { EventCardPreview } from '../EventCardPreview';
@@ -82,7 +91,7 @@ export function EventsSection({
   const [errors, setErrors] = useState<{ title?: boolean }>({});
   const [shake, setShake] = useState(false);
 
-  const isFormOpen = formExpanded || editingId !== null;
+  const topFormRef = useRef<HTMLDivElement>(null);
 
   const saveOrder = (ordered: Event[]) => {
     const updated = ordered.map((e, i) => ({ ...e, sortOrder: i }));
@@ -159,7 +168,65 @@ export function EventsSection({
       details: (e.details || []).join('\n'),
       imageUrl: e.imageUrl,
     });
+    // The copy opens in the "Add New Event" form at the top of the section
+    requestAnimationFrame(() => topFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
+
+  const renderForm = (inline = false) => (
+      <div ref={inline ? undefined : topFormRef} style={inline ? { padding: '12px' } : formGroupStyle}>
+        <span style={formLabelStyle}>{editingId ? 'Edit Event' : 'Add New Event'}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '10px', color: '#888' }}>
+                Title <span style={{ color: '#f44336' }}>*</span>
+              </span>
+              <input
+                className={`${errors.title ? 'field-error' : ''} ${shake && errors.title ? 'shake' : ''}`}
+                style={{ ...inputStyle, width: '100%' }}
+                placeholder="Title"
+                value={form.title}
+                onChange={e => {
+                  setForm({ ...form, title: e.target.value });
+                  setErrors({});
+                }}
+              />
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '10px', color: '#888' }}>Subtitle</span>
+              <input
+                style={{ ...inputStyle, width: '100%' }}
+                placeholder="Subtitle"
+                value={form.subtitle}
+                onChange={e => setForm({ ...form, subtitle: e.target.value })}
+              />
+            </div>
+          </div>
+          <ImagePicker
+            label="Image"
+            value={form.imageUrl}
+            onChange={imageUrl => setForm({ ...form, imageUrl })}
+          />
+          <MarkdownEditor
+            key={editingId ?? 'new'}
+            value={form.details}
+            onChange={details => setForm({ ...form, details })}
+            cardPreview={{ title: form.title, subtitle: form.subtitle, imageUrl: form.imageUrl }}
+          />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button style={btn} onClick={submit}>
+              {editingId ? 'Save Draft' : 'Add Event to Draft'}
+            </button>
+            <button style={{ ...btn, background: 'var(--theme-color-primary-400)' }} onClick={() => setPreviewingForm(true)}>
+              Preview
+            </button>
+            <button style={{ ...btn, background: '#888' }} onClick={cancelEdit}>
+              {editingId ? 'Cancel' : 'Close'}
+            </button>
+          </div>
+        </div>
+      </div>
+  );
 
   return (
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
@@ -168,65 +235,11 @@ export function EventsSection({
         {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
       </h2>
 
-      {/* Add/Edit Event Form */}
-      {isFormOpen ? (
-        <div style={formGroupStyle}>
-          <span style={formLabelStyle}>{editingId ? 'Edit Event' : 'Add New Event'}</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '10px', color: '#888' }}>
-                  Title <span style={{ color: '#f44336' }}>*</span>
-                </span>
-                <input
-                  className={`${errors.title ? 'field-error' : ''} ${shake && errors.title ? 'shake' : ''}`}
-                  style={{ ...inputStyle, width: '100%' }}
-                  placeholder="Title"
-                  value={form.title}
-                  onChange={e => {
-                    setForm({ ...form, title: e.target.value });
-                    setErrors({});
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '10px', color: '#888' }}>Subtitle</span>
-                <input
-                  style={{ ...inputStyle, width: '100%' }}
-                  placeholder="Subtitle"
-                  value={form.subtitle}
-                  onChange={e => setForm({ ...form, subtitle: e.target.value })}
-                />
-              </div>
-            </div>
-            <ImagePicker
-              label="Image"
-              value={form.imageUrl}
-              onChange={imageUrl => setForm({ ...form, imageUrl })}
-            />
-            <MarkdownEditor
-              key={editingId ?? 'new'}
-              value={form.details}
-              onChange={details => setForm({ ...form, details })}
-              cardPreview={{ title: form.title, subtitle: form.subtitle, imageUrl: form.imageUrl }}
-            />
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button style={btn} onClick={submit}>
-                {editingId ? 'Save Draft' : 'Add Event to Draft'}
-              </button>
-              <button style={{ ...btn, background: 'var(--theme-color-primary-400)' }} onClick={() => setPreviewingForm(true)}>
-                Preview
-              </button>
-              <button style={{ ...btn, background: '#888' }} onClick={cancelEdit}>
-                {editingId ? 'Cancel' : 'Close'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
+      {/* Add Event Form (editing opens in place, inside the event's card) */}
+      {formExpanded && editingId === null ? renderForm() : (
         <button
           style={{ ...btn, width: '100%', marginBottom: '16px' }}
-          onClick={() => setFormExpanded(true)}
+          onClick={() => { cancelEdit(); setFormExpanded(true); }}
         >
           + Add New Event
         </button>
@@ -252,7 +265,7 @@ export function EventsSection({
         </div>
       )}
 
-      {/* Events List */}
+      {/* Events List: one column at every width so the order is easy to read */}
       {events.length > 0 && (
         <div style={listHeaderStyle}>
           <span>Current Events{events.length > 1 && <span style={{ fontWeight: 400, color: '#888' }}> · drag ⋮⋮ to reorder</span>}</span>
@@ -274,113 +287,108 @@ export function EventsSection({
               pub.subtitle !== e.subtitle ||
               pub.imageUrl !== e.imageUrl ||
               JSON.stringify(pub.details) !== JSON.stringify(e.details));
+          // NEW badge as residents see it now (from the published copy)
+          const isLiveNew = !!pub && !isMarkedForDeletion && isEventNew(pub, config);
+          const isEditing = editingId === e.id;
 
           return (
             <div
               key={e.id}
               ref={rowRef(e.id)}
+              data-testid="event-card"
               style={{
-                ...listCardStyle,
-                // Narrow screens: action buttons wrap under the content instead of overflowing
-                flexWrap: 'wrap',
-                rowGap: '8px',
-                ...(isMarkedForDeletion
-                  ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
-                  : {}),
-                ...(hasChanges ? itemChangedStyle : {}),
+                ...editorCardStyle,
+                ...(isMarkedForDeletion ? editorCardDeletedStyle : {}),
+                ...(hasChanges ? editorCardChangedStyle : {}),
                 ...rowStyle(e.id),
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  flex: '1 1 240px',
-                  minWidth: 0,
-                  ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
-                }}
-              >
-                {events.length > 1 && (
-                  <span
-                    {...handleProps(e.id)}
-                    style={{ ...handleProps(e.id).style, color: '#aaa', fontSize: '18px', lineHeight: 1, padding: '10px 8px', margin: '-10px -4px -10px -8px', flexShrink: 0, textDecoration: 'none' }}
-                  >
-                    ⋮⋮
-                  </span>
-                )}
-                {isNewDraft && !isMarkedForDeletion && (
-                  <span style={draftIndicatorStyle} title="New draft item">
-                    ●
-                  </span>
-                )}
-                {isMarkedForDeletion && (
-                  <span style={{ color: '#f44336', fontSize: '10px' }} title="Will be deleted on publish">
-                    🗑
-                  </span>
-                )}
-                {e.imageUrl && (
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '6px',
-                      backgroundImage: `url(${e.imageUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                  <span style={{ fontWeight: 600, color: '#333' }}>{e.title}</span>
-                  <span style={{ fontSize: '12px', color: '#888' }}>{e.subtitle}</span>
-                  <span style={{ fontSize: '10px', color: '#666' }}>
-                    {e.details.length} detail{e.details.length !== 1 ? 's' : ''}
-                    {e.imageUrl && ' • has image'}
-                  </span>
-                </div>
-              </div>
-              <span style={{ display: 'flex', gap: '4px', marginLeft: 'auto', flexShrink: 0 }}>
-                {isMarkedForDeletion ? (
-                  <button
-                    style={{ ...smallBtn, ...smallBtnSuccess }}
-                    onClick={() => unmarkForDeletion(e.id)}
-                  >
-                    Undo
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      style={{ ...smallBtn, ...smallBtnInfo, fontSize: '10px' }}
-                      onClick={() => setPreviewEvent(e)}
+              {isEditing ? renderForm(true) : (
+                <>
+                  <div style={editorCardTopStyle}>
+                    {events.length > 1 ? (
+                      <span
+                        {...handleProps(e.id)}
+                        style={{ ...handleProps(e.id).style, ...editorCardHandleStyle }}
+                      >
+                        ⋮⋮
+                      </span>
+                    ) : (
+                      <span style={{ width: '8px', flexShrink: 0 }} />
+                    )}
+                    <div
+                      style={{
+                        ...editorCardBodyStyle,
+                        ...(isMarkedForDeletion ? { opacity: 0.55 } : {}),
+                      }}
                     >
-                      Preview
-                    </button>
-                    <button
-                      style={{ ...smallBtn, ...smallBtnInfo }}
-                      onClick={() => cloneEvent(e)}
-                      title="Clone"
-                    >
-                      ⧉
-                    </button>
-                    <button
-                      style={{ ...smallBtn, ...smallBtnPrimary }}
-                      onClick={() => startEdit(e)}
-                      title="Edit"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      style={{ ...smallBtn, ...smallBtnDanger }}
-                      onClick={() => markForDeletion(e.id)}
-                      title="Delete"
-                    >
-                      ✕
-                    </button>
-                  </>
-                )}
-              </span>
+                      <span style={{ ...editorCardTitleStyle, ...(isMarkedForDeletion ? { textDecoration: 'line-through' } : {}) }}>
+                        {e.title}
+                      </span>
+                      {e.subtitle && <span style={editorCardTextStyle}>{e.subtitle}</span>}
+                      <span style={editorCardMetaStyle}>
+                        {isMarkedForDeletion ? (
+                          <span style={{ ...chipStyle, ...chipRemovingStyle }} title="Will be removed on publish">Removing</span>
+                        ) : isNewDraft ? (
+                          <span style={{ ...chipStyle, ...chipDraftStyle }} title="Not published yet">Draft</span>
+                        ) : (
+                          <>
+                            {isLiveNew && <span style={{ ...chipStyle, ...chipNewStyle }} title="Shows a NEW badge in the lobby">New</span>}
+                            {hasChanges && <span style={{ ...chipStyle, ...chipEditedStyle }} title="Edited since the last publish">Edited</span>}
+                          </>
+                        )}
+                        <span>{e.details.length} detail{e.details.length !== 1 ? 's' : ''}</span>
+                        {e.imageUrl && <span>has image</span>}
+                      </span>
+                    </div>
+                    {e.imageUrl && (
+                      <div
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '8px',
+                          backgroundImage: `url(${e.imageUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          flexShrink: 0,
+                          ...(isMarkedForDeletion ? { opacity: 0.4 } : {}),
+                        }}
+                      />
+                    )}
+                  </div>
+                  {isMarkedForDeletion ? (
+                    <div style={actionBarStyle(1)}>
+                      <button
+                        style={{ ...actionBarButtonStyle, ...actionBarButtonFirstStyle, ...actionBarUndoStyle }}
+                        onClick={() => unmarkForDeletion(e.id)}
+                      >
+                        <UndoIcon /> Undo remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={actionBarStyle(4)}>
+                      <button
+                        style={{ ...actionBarButtonStyle, ...actionBarButtonFirstStyle, ...actionBarPrimaryStyle }}
+                        onClick={() => startEdit(e)}
+                      >
+                        <EditIcon /> Edit
+                      </button>
+                      <button style={actionBarButtonStyle} onClick={() => setPreviewEvent(e)}>
+                        <PreviewIcon /> Preview
+                      </button>
+                      <button style={actionBarButtonStyle} onClick={() => cloneEvent(e)} title="Duplicate as a new event">
+                        <CopyIcon /> Copy
+                      </button>
+                      <button
+                        style={{ ...actionBarButtonStyle, ...actionBarDangerStyle }}
+                        onClick={() => markForDeletion(e.id)}
+                      >
+                        <TrashIcon /> Delete
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           );
         })}
