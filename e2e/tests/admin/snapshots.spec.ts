@@ -34,10 +34,10 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
 
     // The header should show the "Unpublished changes" indicator
     // This appears as a span with "Unpublished changes" text and a yellow dot
-    await expect(page.locator('text=Unpublished changes')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).toBeVisible({ timeout: 10_000 });
 
     // The Publish button should be enabled (not disabled)
-    const publishBtn = page.getByRole('button', { name: 'Publish' });
+    const publishBtn = page.getByRole('banner').getByRole('button', { name: 'Publish', exact: true });
     await expect(publishBtn).toBeEnabled();
   });
 
@@ -45,14 +45,14 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
     await page.goto('/admin');
 
     // Ensure there are unpublished changes (from previous test's created service)
-    await expect(page.locator('text=Unpublished changes')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).toBeVisible({ timeout: 10_000 });
 
     // Click the Publish button
-    const publishBtn = page.getByRole('button', { name: 'Publish' });
+    const publishBtn = page.getByRole('banner').getByRole('button', { name: 'Publish', exact: true });
     await publishBtn.click();
 
     // After publishing, the "Unpublished changes" indicator should disappear
-    await expect(page.locator('text=Unpublished changes')).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).not.toBeVisible({ timeout: 10_000 });
 
     // The Publish button should now be disabled (no changes to publish)
     await expect(publishBtn).toBeDisabled();
@@ -71,19 +71,19 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
     });
 
     await page.goto('/admin');
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
-    await expect(page.locator('text=Unpublished changes')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).toBeVisible({ timeout: 10_000 });
 
     // Click Discard - note this triggers a confirm dialog
     page.on('dialog', dialog => dialog.accept());
-    await page.getByRole('button', { name: 'Discard' }).click();
+    await page.getByRole('banner').getByRole('button', { name: 'Discard', exact: true }).click();
 
     // After discarding, the test service should no longer appear
     // (it was created after the last publish, so discard removes it)
-    await expect(page.locator(`text=${svc.name}`)).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).not.toBeVisible({ timeout: 10_000 });
 
     // The "Unpublished changes" indicator should disappear
-    await expect(page.locator('text=Unpublished changes')).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).not.toBeVisible({ timeout: 10_000 });
   });
 
   test('History modal shows published versions', async ({ page }) => {
@@ -168,7 +168,7 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
     });
 
     await page.goto('/admin');
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
 
     // Mark the service for deletion via API
     await api.delete(`/api/services/${svc.id}`);
@@ -177,16 +177,16 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
     await page.reload();
 
     // The service should still show (with strikethrough/Undo)
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
 
     // Publish - this should hard-delete the marked item
-    const publishBtn = page.getByRole('button', { name: 'Publish' });
+    const publishBtn = page.getByRole('banner').getByRole('button', { name: 'Publish', exact: true });
     if (await publishBtn.isEnabled()) {
       await publishBtn.click();
 
       // After publishing, the marked-for-deletion service should be gone
       await page.waitForTimeout(2000);
-      await expect(page.locator(`text=${svc.name}`)).not.toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole('main').locator(`text=${svc.name}`)).not.toBeVisible({ timeout: 10_000 });
 
       // Verify via API that the service no longer exists
       const res = await api.get('/api/services');

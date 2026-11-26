@@ -85,8 +85,9 @@ test.describe('Authentication', () => {
       await freshPage.goto('/admin');
       await expect(freshPage.locator('.admin-header')).toBeVisible();
 
-      // Click the Logout button
-      await freshPage.getByRole('button', { name: /logout/i }).click();
+      // Log out lives in the header's ⋯ menu
+      await freshPage.getByRole('button', { name: 'More' }).click();
+      await freshPage.getByRole('menuitem', { name: /log out/i }).click();
 
       // Should redirect to the login page
       await expect(freshPage).toHaveURL(/\/login/, { timeout: 10_000 });

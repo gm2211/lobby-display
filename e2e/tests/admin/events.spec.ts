@@ -32,18 +32,18 @@ test.describe('Admin - Events Section', () => {
       details: ['Detail line 1'],
     });
 
-    await page.goto('/admin');
+    await page.goto('/admin#events');
     await expect(page.locator('h2', { hasText: 'Events' })).toBeVisible();
 
     // The event should appear in the events list
-    await expect(page.locator(`text=${uniqueTitle}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${uniqueTitle}`)).toBeVisible();
 
     // Verify the list header shows "Current Events"
     await expect(page.locator('text=Current Events')).toBeVisible();
   });
 
   test('Can add event with title, subtitle, and details', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/admin#events');
 
     // Scope to the Events section to avoid strict mode violations
     const eventsSection = page.locator('section').filter({ hasText: 'Events' }).first();
@@ -60,7 +60,7 @@ test.describe('Admin - Events Section', () => {
     await eventsSection.getByRole('button', { name: 'Add Event to Draft' }).click();
 
     // The new event should appear in the list
-    await expect(page.locator(`text=${title}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${title}`)).toBeVisible({ timeout: 10_000 });
 
     // Clean up via API
     const res = await api.get('/api/events');
@@ -79,8 +79,8 @@ test.describe('Admin - Events Section', () => {
       details: ['Original detail'],
     });
 
-    await page.goto('/admin');
-    await expect(page.locator(`text=${evt.title}`)).toBeVisible();
+    await page.goto('/admin#events');
+    await expect(page.getByRole('main').locator(`text=${evt.title}`)).toBeVisible();
 
     // Each event is a card (data-testid="event-card") with an Edit · Preview · Copy · Delete bar.
     // Edit opens the form in place, inside the card.
@@ -106,7 +106,7 @@ test.describe('Admin - Events Section', () => {
     await page.getByRole('button', { name: 'Save Draft' }).click();
 
     // The edited title should appear in the list
-    await expect(page.locator(`text=${editedTitle}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${editedTitle}`)).toBeVisible({ timeout: 10_000 });
   });
 
   test('Delete marks event for deletion', async ({ page }) => {
@@ -117,8 +117,8 @@ test.describe('Admin - Events Section', () => {
       details: ['Detail to delete'],
     });
 
-    await page.goto('/admin');
-    await expect(page.locator(`text=${evt.title}`)).toBeVisible();
+    await page.goto('/admin#events');
+    await expect(page.getByRole('main').locator(`text=${evt.title}`)).toBeVisible();
 
     // Find the Delete button in the event card's action bar
     const card = page.getByTestId('event-card').filter({ hasText: evt.title });
@@ -137,8 +137,8 @@ test.describe('Admin - Events Section', () => {
       details,
     });
 
-    await page.goto('/admin');
-    await expect(page.locator(`text=${evt.title}`)).toBeVisible();
+    await page.goto('/admin#events');
+    await expect(page.getByRole('main').locator(`text=${evt.title}`)).toBeVisible();
 
     // Verify the detail count shows in the card
     const detailsCard = page.getByTestId('event-card').filter({ hasText: evt.title });

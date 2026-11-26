@@ -30,7 +30,7 @@ test.describe('Admin - Config Section', () => {
   });
 
   test('Displays current building title', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/admin#settings');
 
     // The Config section should be visible with "Dashboard" heading
     await expect(page.locator('h2', { hasText: 'Dashboard' })).toBeVisible();
@@ -45,7 +45,7 @@ test.describe('Admin - Config Section', () => {
   });
 
   test('Can edit and save title', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/admin#settings');
 
     const titleInput = page.getByPlaceholder('Dashboard title');
     await expect(titleInput).toBeVisible();
@@ -120,12 +120,14 @@ test.describe('Admin - Config Section', () => {
     // Wait for the API call to propagate
     await page.waitForTimeout(500);
 
-    // Verify the Events section also has a scroll speed slider
-    const eventsSection = page.locator('section').filter({ hasText: 'Events' }).first();
+    // Verify the Events section (its own tab) also has a scroll speed slider
+    await page.locator('nav[aria-label="Editor sections"] button', { hasText: 'Events' }).click();
+    const eventsSection = page.locator('section:visible').filter({ hasText: 'Events' }).first();
     const eventsSpeedSlider = eventsSection.locator('input[type="range"]');
     await expect(eventsSpeedSlider).toBeVisible();
 
     // Restore original services scroll speed
+    await page.locator('nav[aria-label="Editor sections"] button', { hasText: 'Services' }).click();
     await pageSpeedSlider.fill(currentValue);
     await page.waitForTimeout(500);
   });
