@@ -10,6 +10,10 @@
  * Content gets bottom padding equal to the tab bar + home-indicator inset so
  * nothing ever sits behind the bar. Per-tab scroll positions live in Admin.tsx.
  *
+ * GOTCHA: don't add viewport-fit=cover / env(safe-area-inset-top) to the header.
+ * On iPad and iPhone Safari that let content show above the sticky header behind
+ * Safari's floating toolbar, plus a dark band at the top (fixed in #43).
+ *
  * GOTCHA: no border shorthand mixed with longhand on the same element in React
  * inline styles (CLAUDE.md). This file only uses class rules.
  */
@@ -30,6 +34,11 @@
   flex-direction: column;
 }
 html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
+/* index.css gives phones `html, body { overflow: auto }` for the lobby screen. That
+   makes <body> its own (non-scrolling) scroll container, so the sticky header
+   scrolled away on iPhone. On admin the window must be the only scroller. */
+html:has(.admin-shell) { overflow: visible !important; height: auto !important; }
+body:has(.admin-shell) { overflow-x: clip !important; overflow-y: visible !important; height: auto !important; }
 
 /* ---------- Header ---------- */
 .admin-header {
@@ -38,9 +47,6 @@ html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
   z-index: 100;
   background: linear-gradient(135deg, var(--theme-header-gradient-start, #222721) 0%, var(--theme-header-gradient-end, #222721) 100%);
   color: #fff;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
 }
 .admin-header-row {
   display: flex;
@@ -63,8 +69,8 @@ html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.admin-unpublished { font-size: 11.5px; font-weight: 700; color: #e6c46a; white-space: nowrap; }
-.admin-uptodate { font-size: 11.5px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
+.admin-unpublished { font-size: 11.5px; font-weight: 700; color: #e6c46a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-uptodate { font-size: 11.5px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .admin-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .admin-hbtn {
@@ -91,6 +97,8 @@ html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
 .admin-hbtn-primary:hover:not(:disabled) { background: #f0ae10; }
 .admin-hbtn-primary:disabled { background: rgba(255, 255, 255, 0.12); border-color: transparent; color: rgba(255, 255, 255, 0.7); opacity: 1; }
 .admin-hbtn-icon { width: 38px; padding: 0; justify-content: center; }
+a.admin-hbtn { text-decoration: none; }
+.admin-hbtn-dash { padding-left: 8px; gap: 2px; }
 .admin-hbtn:focus-visible, .admin-tabbar button:focus-visible, .admin-toptabs button:focus-visible, .admin-btn:focus-visible {
   outline: 2px solid var(--admin-amber);
   outline-offset: 2px;
@@ -336,6 +344,10 @@ html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
 /* ---------- iPhone ---------- */
 @media (max-width: 767px) {
   .admin-not-phone { display: none !important; }
+  .admin-hbtn-dash { padding-right: 10px; }
+  .admin-brand img { display: none; }
+  .admin-wide-word { display: none; }
+  .admin-header-actions { gap: 6px; }
   .admin-header-row { padding: 8px 12px 10px; }
   .admin-brand img { height: 28px; }
   .admin-brand h1 { font-size: 17px; }

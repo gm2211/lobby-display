@@ -36,7 +36,7 @@ The admin page is tabs, not one long scroll (`src/pages/Admin.tsx` + `src/pages/
 
 | Width | Tabs | Extras |
 |-------|------|--------|
-| < 768px (iPhone) | Bar **fixed** to the bottom: Services, Events, Advisories, Settings (Appearance folds into Settings) | ⋯ menu holds Review changes, Preview, History, Discard, Metrics, Dashboard, Log out |
+| < 768px (iPhone) | Bar **fixed** to the bottom: Services, Events, Advisories, Settings (Appearance folds into Settings) | ⋯ menu holds Review changes, Preview, History, Discard, Metrics, Log out. "‹ Dashboard" is always visible in the header |
 | 768-1199 (iPad) | Row along the bottom of the sticky header, Appearance gets its own tab | ⋯ menu has Review changes |
 | >= 1200 (desktop) | Same as iPad | "Not yet on the lobby" side panel (`ChangesPanel`) |
 
@@ -44,9 +44,9 @@ The admin page is tabs, not one long scroll (`src/pages/Admin.tsx` + `src/pages/
   toolbars stop collapsing and fixed/sticky bars misbehave.
 - Every section stays mounted; inactive tabs are `hidden`, so open edit forms survive a tab switch.
   Each tab remembers its own `scrollY`; tapping the active tab scrolls to top. The tab is in the URL hash (`/admin#events`).
-- On iPhone the content's bottom padding is tab bar + `env(safe-area-inset-bottom)`. Admin adds
-  `viewport-fit=cover` to the viewport meta on mount (and removes it on unmount) so the inset is real
-  in home-screen mode; the lobby dashboard is unaffected.
+- On iPhone the content's bottom padding is tab bar + `env(safe-area-inset-bottom)` (0 in Safari).
+  **Don't** add `viewport-fit=cover`: iPad/iPhone Safari then draws content behind its floating
+  toolbar above the sticky header. Admin sets `<meta name="theme-color">` to the header color instead.
 - Tab badges and the changes panel come from `computeDraftChanges()` (`src/utils/draftChanges.ts`),
   a client-side diff of draft vs. `draft-status.published`. Undo: removing → `/unmark`, edited →
   `restore-items` from the latest version, added → `DELETE`. A section flagged changed with nothing listed shows a dot.
