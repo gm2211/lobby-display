@@ -219,13 +219,23 @@ export default function Admin() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // Let the page draw under the iPhone home indicator; the tab bar pads itself
+  // Tint Safari's toolbars to match the header. Deliberately NO viewport-fit=cover:
+  // with it, iPad/iPhone Safari draws page content behind its floating toolbar
+  // above the sticky header, and env(safe-area-inset-top) adds a dark band.
   useEffect(() => {
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
-    if (!meta) return;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const created = !meta;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
     const original = meta.content;
-    if (!/viewport-fit/.test(original)) meta.content = `${original}, viewport-fit=cover`;
-    return () => { meta.content = original; };
+    meta.content = '#222721';
+    return () => {
+      if (created) meta?.remove();
+      else if (meta) meta.content = original;
+    };
   }, []);
 
   // Sticky things below the header need its height
@@ -285,11 +295,15 @@ export default function Admin() {
             <div>
               <h1>{config?.dashboardTitle || 'Building Updates'}</h1>
               {hasChanges
-                ? <span className="admin-unpublished">● {changes.length ? `${changes.length} unpublished change${changes.length === 1 ? '' : 's'}` : 'Unpublished changes'}</span>
+                ? <span className="admin-unpublished">● {changes.length ? <>{changes.length} <span className="admin-wide-word">unpublished </span>change{changes.length === 1 ? '' : 's'}</> : 'Unpublished changes'}</span>
                 : <span className="admin-uptodate">Live on the lobby</span>}
             </div>
           </div>
           <div className="admin-header-actions">
+            <a href="/" className="admin-hbtn admin-hbtn-dash" aria-label="Back to the dashboard" title="Back to the dashboard">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+              <span>Dashboard</span>
+            </a>
             <button type="button" className="admin-hbtn admin-not-phone" disabled={!hasChanges} onClick={() => setPreviewOpen(true)}>Preview</button>
             <button type="button" className="admin-hbtn admin-not-phone" onClick={() => setHistoryOpen(true)}>History</button>
             <button type="button" className="admin-hbtn admin-not-phone" disabled={!hasChanges} onClick={discard}>Discard</button>
@@ -307,7 +321,6 @@ export default function Admin() {
                     {isPhone && <button type="button" role="menuitem" onClick={runFromMenu(() => setHistoryOpen(true))}>History</button>}
                     {isPhone && <button type="button" role="menuitem" disabled={!hasChanges} onClick={runFromMenu(discard)}>Discard changes</button>}
                     <a role="menuitem" href="/metrics">Metrics</a>
-                    <a role="menuitem" href="/">View dashboard</a>
                     {user && <button type="button" role="menuitem" className="is-danger" onClick={runFromMenu(handleLogout)}>Log out {user.username}</button>}
                   </div>
                 </>
