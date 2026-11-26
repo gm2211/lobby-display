@@ -13,8 +13,16 @@ const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
 async function seedIfEmpty() {
-  const count = await prisma.service.count();
-  if (count > 0) return;
+  // Rollback-safe guard (backported from main): only seed a never-used database.
+  // A building with zero services must not get the demo content back.
+  const [snapshots, services, events, advisories, configs] = await Promise.all([
+    prisma.publishedSnapshot.count(),
+    prisma.service.count(),
+    prisma.event.count(),
+    prisma.advisory.count(),
+    prisma.buildingConfig.count(),
+  ]);
+  if (snapshots + services + events + advisories + configs > 0) return;
 
   await prisma.service.createMany({
     data: [
@@ -121,7 +129,7 @@ async function cleanupStaleUsers() {
   // first-time setup flow can run cleanly.
   try {
     const deleted = await prisma.$executeRawUnsafe(
-      `DELETE FROM "User" WHERE "role"::text NOT IN ('EDITOR', 'ADMIN')`
+      `DELETE FROM "User" WHERE "role"::text NOT IN ('VIEWER', 'EDITOR', 'ADMIN')`
     );
     if (deleted > 0) console.log(`[cleanup] Removed ${deleted} user(s) with stale role values`);
   } catch {

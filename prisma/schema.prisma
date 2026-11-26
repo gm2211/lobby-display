@@ -43,6 +43,9 @@ model Event {
   sortOrder         Int       @default(0)
   markedForDeletion Boolean   @default(false)
   deletedAt         DateTime?
+  /// When this event first went live (set on publish). Null = never published (draft).
+  /// Drives the "NEW" badge; see shared/newBadge.ts.
+  firstPublishedAt  DateTime?
 
   @@schema("public")
 }
@@ -75,6 +78,12 @@ model BuildingConfig {
   fontScale            Int    @default(100)
   colorPrimary         String @default("")
   colorSecondary       String @default("")
+  /// NEW badge on events: "days" (show for newBadgeDays after first publish),
+  /// "untilNextUpdate" (show until the events list is next published), or "off".
+  newBadgeMode         String @default("days")
+  newBadgeDays         Int    @default(7)
+  /// Background color of the NEW badge pill (hex). Brand yellow by default.
+  newBadgeColor        String @default("#ffc72c")
 
   @@schema("public")
 }
@@ -134,6 +143,18 @@ model Message {
   body        String
   readAt      DateTime?
   createdAt   DateTime  @default(now())
+
+  @@schema("public")
+}
+
+/// Images uploaded in the admin editor, served at /images/uploads/<id>.
+/// Stored in the database because the host's disk is wiped on every deploy.
+model UploadedImage {
+  /// Random file name including extension, e.g. "1795657538569-b78d811d91ca.png"
+  id        String   @id
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
 
   @@schema("public")
 }
