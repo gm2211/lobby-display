@@ -7,6 +7,7 @@ import fastifyExpress from '@fastify/express';
 
 import app from './app.js';
 import prisma from './db.js';
+import { cleanupStaleUsers } from './utils/staleUsers.js';
 import { getCurrentState } from './routes/snapshots.js';
 import { getThemeStyleBlock, getDashboardTitle } from './themeCSS.js';
 import { asyncHandler } from './middleware/errorHandler.js';
@@ -101,26 +102,13 @@ async function seedSnapshot() {
   await prisma.publishedSnapshot.create({ data: { version: 1, data: JSON.stringify(data) } });
 }
 
-async function cleanupStaleUsers() {
-  // After role enum rename (SUPER_ADMIN→ADMIN, ADMIN→EDITOR), old rows may
-  // have values the Prisma client can't deserialize. Delete them so the
-  // first-time setup flow can run cleanly.
-  try {
-    const deleted = await prisma.$executeRawUnsafe(
-      `DELETE FROM "User" WHERE "role"::text NOT IN ('EDITOR', 'ADMIN')`
-    );
-    if (deleted > 0) console.log(`[cleanup] Removed ${deleted} user(s) with stale role values`);
-  } catch {
-    // Table might not exist yet on first deploy — safe to ignore
-  }
-}
-
 async function start() {
   if (process.env.NODE_ENV === 'production' && (process.env.TEST_USER || process.env.TEST_PASS)) {
     throw new Error('FATAL: TEST_USER and TEST_PASS must not be set in production');
   }
 
-  await cleanupStaleUsers();
+  const removed = await cleanupStaleUsers();
+  if (removed > 0) console.log(`[cleanup] Removed ${removed} user(s) with stale role values`);
   await seedIfEmpty();
   await seedSnapshot();
 
