@@ -29,7 +29,7 @@ test.describe('RBAC - Role-Based Access Control', () => {
     }
   });
 
-  test('VIEWER GET /api/services returns 200', async ({ api }) => {
+  test('VIEWER can read the published snapshot but not draft data', async ({ api }) => {
     // Create a temporary viewer user via admin API
     const viewerName = `e2e-viewer-${Date.now()}`;
     const viewerPass = 'E2eViewerPass1!';
@@ -52,10 +52,15 @@ test.describe('RBAC - Role-Based Access Control', () => {
         });
         expect(loginRes.ok()).toBe(true);
 
-        const res = await viewerCtx.get('/api/services');
-        expect(res.status()).toBe(200);
-        const body = await res.json();
-        expect(Array.isArray(body)).toBe(true);
+        // Lobby screens only need the published snapshot
+        const published = await viewerCtx.get('/api/snapshots/latest');
+        expect(published.status()).toBe(200);
+
+        // Draft tables, config and version history are EDITOR+ only
+        for (const path of ['/api/services', '/api/events', '/api/advisories', '/api/config', '/api/snapshots']) {
+          const res = await viewerCtx.get(path);
+          expect(res.status(), path).toBe(403);
+        }
       } finally {
         await viewerCtx.dispose();
       }

@@ -19,26 +19,31 @@ export default function Dashboard() {
   const snapshotVersion = params.get('snapshot');
 
   const fetchAll = useCallback(() => {
+    // A failed request (network blip, expired session, deploy in progress) must never
+    // replace what is on screen: keep showing the last good data and try again later.
+    const getJson = async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${url} returned ${res.status}`);
+      return res.json();
+    };
+    const applySnapshot = (data: { services?: Service[]; events?: Event[]; advisories?: Advisory[]; config?: BuildingConfig | null }) => {
+      setServices(data.services || []);
+      setEvents(data.events || []);
+      setAdvisories(data.advisories || []);
+      setConfig(data.config || null);
+    };
+    const ignore = () => {};
+
     if (isPreview) {
-      fetch('/api/services').then(r => r.json()).then(setServices);
-      fetch('/api/events').then(r => r.json()).then(setEvents);
-      fetch('/api/advisories').then(r => r.json()).then(setAdvisories);
-      fetch('/api/config').then(r => r.json()).then(setConfig);
+      getJson('/api/services').then(setServices).catch(ignore);
+      getJson('/api/events').then(setEvents).catch(ignore);
+      getJson('/api/advisories').then(setAdvisories).catch(ignore);
+      getJson('/api/config').then(setConfig).catch(ignore);
     } else if (snapshotVersion) {
       // Load a specific snapshot version (for preview in history)
-      fetch(`/api/snapshots/${snapshotVersion}`).then(r => r.json()).then(data => {
-        setServices(data.services || []);
-        setEvents(data.events || []);
-        setAdvisories(data.advisories || []);
-        setConfig(data.config || null);
-      });
+      getJson(`/api/snapshots/${encodeURIComponent(snapshotVersion)}`).then(applySnapshot).catch(ignore);
     } else {
-      fetch('/api/snapshots/latest').then(r => r.json()).then(data => {
-        setServices(data.services || []);
-        setEvents(data.events || []);
-        setAdvisories(data.advisories || []);
-        setConfig(data.config || null);
-      });
+      getJson('/api/snapshots/latest').then(applySnapshot).catch(ignore);
     }
   }, [isPreview, snapshotVersion]);
 

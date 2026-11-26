@@ -144,3 +144,15 @@ model Message {
 
   @@schema("public")
 }
+
+/// Images uploaded in the admin editor, served at /images/uploads/<id>.
+/// Stored in the database because the host's disk is wiped on every deploy.
+model UploadedImage {
+  /// Random file name including extension, e.g. "1795657538569-b78d811d91ca.png"
+  id        String   @id
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@schema("public")
+}

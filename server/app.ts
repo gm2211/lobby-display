@@ -15,14 +15,14 @@ import snapshotsRouter from './routes/snapshots.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import metricsRouter from './routes/metrics.js';
-import messagesRouter from './routes/messages.js';
 import { sseHandler } from './sse.js';
 import { csrfMiddleware } from './middleware/csrf.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requireAuth, requireMinRole, ROLE_LEVEL, AuthenticationError, AuthorizationError } from './middleware/auth.js';
 import { PrismaSessionStore } from './utils/sessionStore.js';
 import { syncSessionUser } from './middleware/sessionUser.js';
-import { NotFoundError } from './middleware/errorHandler.js';
+import { NotFoundError, asyncHandler } from './middleware/errorHandler.js';
+import prisma from './db.js';
 import { SESSION_AGES } from './constants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,8 +34,8 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 // The stored extension comes from the validated MIME type, never from the uploaded
-// filename: express.static picks the Content-Type from the extension, so a file named
-// "x.html" with PNG magic bytes would otherwise be served as a web page.
+// filename: the Content-Type is chosen from it, so a file named "x.html" with PNG magic
+// bytes must not be able to come back as a web page.
 const EXTENSION_BY_MIME: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -43,16 +43,11 @@ const EXTENSION_BY_MIME: Record<string, string> = {
   'image/webp': '.webp',
 };
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = EXTENSION_BY_MIME[file.mimetype] ?? '';
-    cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
-  },
-});
+// Uploads are kept in memory and stored in the database (UploadedImage). The host's
+// disk is wiped on every deploy, so files written there would not survive.
 const upload = multer({
-  storage,
-  limits: { fileSize: MAX_FILE_SIZE },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
@@ -69,6 +64,23 @@ const { DAY_MS, DEFAULT_MS: SESSION_MAX_AGE_MS, REFRESH_THRESHOLD_MS: SESSION_RE
 
 app.disable('x-powered-by');
 
+// Scripts may only come from our own origin, so injected markup cannot run code.
+// Inline styles stay allowed (React style props, the server theme block). Images may be
+// any https URL because editors can paste external image links.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self'",
+  "frame-src 'self'",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
 // Baseline security headers for every response
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -77,6 +89,8 @@ app.use((_req, res, next) => {
   res.setHeader('Referrer-Policy', 'same-origin');
   if (isProd) {
     res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+    // Not sent in dev: Vite's dev server relies on inline scripts for hot reload.
+    res.setHeader('Content-Security-Policy', CONTENT_SECURITY_POLICY);
   }
   next();
 });
@@ -182,41 +196,40 @@ app.use('/api/users', requireMinRole('ADMIN' as const), usersRouter);
 // Metrics routes (ADMIN only)
 app.use('/api/metrics', requireMinRole('ADMIN' as const), metricsRouter);
 
-// Dashboard data: all requests require auth, writes require EDITOR+
-function dashboardProtect(req: Request, _res: Response, next: NextFunction) {
-  if (!req.session.user) return next(new AuthenticationError());
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    if ((ROLE_LEVEL[req.session.user.role] ?? 0) < (ROLE_LEVEL['EDITOR'] ?? 0)) {
-      return next(new AuthorizationError());
-    }
-  }
-  next();
-}
+// Draft data (the editable tables): EDITOR+ for everything, reads included.
+// VIEWER is the lobby-screen login, the account most likely to be shared, so it only
+// gets what the screen needs: the published snapshot and the live-update stream.
+const editorOnly = requireMinRole('EDITOR' as const);
 
-// Snapshots: all reads require auth, writes require EDITOR+
+// Snapshots: VIEWER may read the published state only; history, drafts and all
+// writes need EDITOR+.
 function snapshotsProtect(req: Request, _res: Response, next: NextFunction) {
   if (!req.session.user) return next(new AuthenticationError());
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    if ((ROLE_LEVEL[req.session.user.role] ?? 0) < (ROLE_LEVEL['EDITOR'] ?? 0)) {
-      return next(new AuthorizationError());
-    }
+  const isPublishedRead = (req.method === 'GET' || req.method === 'HEAD') && req.path === '/latest';
+  if (!isPublishedRead && (ROLE_LEVEL[req.session.user.role] ?? 0) < (ROLE_LEVEL['EDITOR'] ?? 0)) {
+    return next(new AuthorizationError());
   }
   next();
 }
 
-// API routes (auth-protected, writes require EDITOR+)
-app.use('/api/services', dashboardProtect, servicesRouter);
-app.use('/api/events', dashboardProtect, eventsRouter);
-app.use('/api/advisories', dashboardProtect, advisoriesRouter);
-app.use('/api/config', dashboardProtect, configRouter);
+// API routes
+app.use('/api/services', editorOnly, servicesRouter);
+app.use('/api/events', editorOnly, eventsRouter);
+app.use('/api/advisories', editorOnly, advisoriesRouter);
+app.use('/api/config', editorOnly, configRouter);
 app.use('/api/snapshots', snapshotsProtect, snapshotsRouter);
 
-// Messages: all routes require authentication (any role)
-app.use('/api/messages', requireAuth, messagesRouter);
-
-// Uploaded images. They are written to public/images/uploads at runtime, which is not
-// part of the Vite build output (dist/), so they need their own static route.
-// Public like the rest of /images (the login page and lobby screens load them).
+// Uploaded images are served from the database. Public like the rest of /images (the
+// login page and lobby screens load them). Names are random, so they never change and
+// can be cached for a long time.
+app.get('/images/uploads/:name', asyncHandler(async (req, res, next) => {
+  const image = await prisma.uploadedImage.findUnique({ where: { id: String(req.params.name) } });
+  if (!image) return next(); // fall through to files uploaded before images moved to the DB
+  res.setHeader('Content-Type', image.mimeType);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(Buffer.from(image.data));
+}));
+// Legacy: files written to disk by older versions (lost on the next deploy)
 app.use('/images/uploads', express.static(uploadDir, { index: false, dotfiles: 'deny', fallthrough: false }));
 
 // Magic bytes for allowed image types
@@ -230,22 +243,15 @@ const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
   'image/webp': [{ offset: 8, bytes: [0x57, 0x45, 0x42, 0x50] }], // "WEBP" at offset 8
 };
 
-function validateMagicBytes(filePath: string, mimetype: string): boolean {
+function validateMagicBytes(buf: Buffer, mimetype: string): boolean {
   const signatures = MAGIC_BYTES[mimetype];
   if (!signatures) return false;
-  const buf = Buffer.alloc(16);
-  const fd = fs.openSync(filePath, 'r');
-  try {
-    fs.readSync(fd, buf, 0, 16, 0);
-  } finally {
-    fs.closeSync(fd);
-  }
   return signatures.some(sig =>
     sig.bytes.every((b, i) => buf[sig.offset + i] === b)
   );
 }
 
-app.post('/api/upload', requireMinRole('EDITOR' as const), (req: Request, res: Response) => {
+app.post('/api/upload', requireMinRole('EDITOR' as const), (req: Request, res: Response, next: NextFunction) => {
   upload.single('file')(req, res, (err) => {
     if (err instanceof MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -259,15 +265,19 @@ app.post('/api/upload', requireMinRole('EDITOR' as const), (req: Request, res: R
     if (err) {
       return res.status(500).json({ error: 'Upload failed' });
     }
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
     // Validate file content matches claimed MIME type
-    if (!validateMagicBytes(req.file.path, req.file.mimetype)) {
-      fs.unlinkSync(req.file.path);
+    if (!validateMagicBytes(file.buffer, file.mimetype)) {
       return res.status(400).json({ error: 'File content does not match its type' });
     }
 
-    res.json({ url: `/images/uploads/${req.file.filename}` });
+    const id = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${EXTENSION_BY_MIME[file.mimetype] ?? ''}`;
+    prisma.uploadedImage
+      .create({ data: { id, mimeType: file.mimetype, data: file.buffer } })
+      .then(() => res.json({ url: `/images/uploads/${id}` }))
+      .catch(next);
   });
 });
 

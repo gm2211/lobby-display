@@ -7,7 +7,7 @@ import fastifyExpress from '@fastify/express';
 
 import app from './app.js';
 import prisma from './db.js';
-import { DEFAULT_SPEEDS } from './constants.js';
+import { getCurrentState } from './routes/snapshots.js';
 import { getThemeStyleBlock, getDashboardTitle } from './themeCSS.js';
 import { asyncHandler } from './middleware/errorHandler.js';
 
@@ -95,40 +95,9 @@ async function seedSnapshot() {
   const count = await prisma.publishedSnapshot.count();
   if (count > 0) return;
 
-  // Must match the section-based format used by getCurrentState() in snapshots.ts
-  const [services, events, advisories, config] = await Promise.all([
-    prisma.service.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.event.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.advisory.findMany(),
-    prisma.buildingConfig.findFirst({ orderBy: { id: 'asc' } }),
-  ]);
-
-  const data = {
-    config: config
-      ? { dashboardTitle: config.dashboardTitle }
-      : null,
-    services: {
-      items: services.map(s => ({
-        id: s.id, name: s.name, status: s.status, notes: s.notes,
-        lastChecked: s.lastChecked.toISOString(), sortOrder: s.sortOrder,
-      })),
-      scrollSpeed: config?.servicesScrollSpeed ?? DEFAULT_SPEEDS.SERVICES,
-    },
-    events: {
-      items: events.map(e => ({
-        id: e.id, title: e.title, subtitle: e.subtitle, details: JSON.parse(e.details),
-        imageUrl: e.imageUrl, accentColor: e.accentColor, sortOrder: e.sortOrder,
-      })),
-      scrollSpeed: config?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
-    },
-    advisories: {
-      items: advisories.map(a => ({
-        id: a.id, message: a.message, active: a.active,
-      })),
-      tickerSpeed: config?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
-    },
-  };
-
+  // Same shape a real publish writes, so a fresh database starts with
+  // "no unpublished changes" instead of a draft that differs from version 1.
+  const data = await getCurrentState();
   await prisma.publishedSnapshot.create({ data: { version: 1, data: JSON.stringify(data) } });
 }
 
@@ -159,6 +128,12 @@ async function start() {
   // Serve the standalone login page without auth; gate JS bundles behind a session.
   const loginHtmlPath = path.resolve(__dirname, 'login.html');
 
+  // The login page's script is a separate file so the Content-Security-Policy can
+  // forbid inline scripts. Public: it contains no data.
+  app.get('/login.js', (_req, res) => {
+    res.sendFile(path.resolve(__dirname, 'login.js'));
+  });
+
   app.get('/login', (req, res) => {
     if (req.session?.user) return res.redirect('/');
     res.sendFile(loginHtmlPath);
@@ -176,6 +151,7 @@ async function start() {
       // Allow: /login, /api/*, /assets/*.css, /assets/*.ttf, static images, favicon
       if (
         req.path === '/login' ||
+        req.path === '/login.js' ||
         req.path.startsWith('/api/') ||
         req.path === '/vite.svg' ||
         req.path.startsWith('/images/') ||
@@ -216,7 +192,13 @@ async function start() {
     app.use(vite.middlewares);
   }
 
-  const fastify = Fastify({ logger: false, trustProxy: isProd });
+  // Which X-Forwarded-For entry is the client. `true` (the default) takes the left-most
+  // one, which the client can set itself; that is why login also has a per-username
+  // limit. Set TRUST_PROXY_HOPS to the number of proxies in front of the app to take
+  // the address the nearest trusted proxy saw instead.
+  const hops = Number(process.env.TRUST_PROXY_HOPS);
+  const trustProxy = isProd ? (Number.isInteger(hops) && hops > 0 ? hops : true) : false;
+  const fastify = Fastify({ logger: false, trustProxy });
   await fastify.register(fastifyExpress);
   fastify.use(app);
 

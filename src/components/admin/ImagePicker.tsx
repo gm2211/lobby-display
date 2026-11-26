@@ -55,8 +55,13 @@ interface ImagePickerProps {
 export function ImagePicker({ value, onChange, label }: ImagePickerProps) {
   const isPreset = IMAGE_PRESETS.some(p => p.url === value);
   const isCustom = !!value && !isPreset;
-  const [showCustom, setShowCustom] = useState(isCustom);
+  const [customChosen, setShowCustom] = useState(isCustom);
+  // Derived, not just state: after an upload (or when the parent loads another event)
+  // the value is a non-preset URL, and the picker must show it instead of "No image".
+  const showCustom = customChosen || isCustom;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const handleSelect = (v: string) => {
     if (v === '__upload__') {
@@ -74,15 +79,25 @@ export function ImagePicker({ value, onChange, label }: ImagePickerProps) {
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    setUploadError('');
+    setUploading(true);
     const fd = new FormData();
     fd.append('file', file);
-    const data = await api.request<{ url?: string }>('/api/upload', {
-      method: 'POST',
-      body: fd,
-    });
-    if (data.url) onChange(data.url);
+    try {
+      const data = await api.request<{ url?: string }>('/api/upload', {
+        method: 'POST',
+        body: fd,
+      });
+      if (data.url) onChange(data.url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      input.value = ''; // let the same file be picked again after an error
+    }
   };
 
   return (
@@ -119,6 +134,12 @@ export function ImagePicker({ value, onChange, label }: ImagePickerProps) {
           />
         )}
       </div>
+      {uploading && <span style={{ fontSize: '12px', color: '#888' }}>Uploading…</span>}
+      {uploadError && (
+        <span role="alert" style={{ fontSize: '12px', color: '#c62828' }}>
+          Upload failed: {uploadError}
+        </span>
+      )}
     </div>
   );
 }

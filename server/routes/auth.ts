@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { asyncHandler, ValidationError } from '../middleware/errorHandler.js';
-import { AuthenticationError } from '../middleware/auth.js';
+import crypto from 'crypto';
+import { AuthenticationError, AuthorizationError } from '../middleware/auth.js';
 import { ensureCsrfToken, rotateCsrfToken } from '../middleware/csrf.js';
 import prisma from '../db.js';
 import type { Role } from '@prisma/client';
@@ -157,18 +158,34 @@ router.get('/csrf', asyncHandler(async (req, res) => {
 
 // --- First-time setup ---
 
+// When the user table is empty, the first visitor can create the admin account. Set the
+// SETUP_TOKEN environment variable to require that value as well, so a database reset
+// on a public URL can't be claimed by whoever arrives first.
+function setupTokenMatches(given: unknown): boolean {
+  const expected = process.env.SETUP_TOKEN;
+  if (!expected) return true;
+  if (typeof given !== 'string') return false;
+  const a = crypto.createHash('sha256').update(given).digest();
+  const b = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 router.get('/setup-required', asyncHandler(async (_req, res) => {
   const count = await prisma.user.count();
-  res.json({ required: count === 0 });
+  res.json({ required: count === 0, tokenRequired: count === 0 && !!process.env.SETUP_TOKEN });
 }));
 
-router.post('/setup', asyncHandler(async (req, res) => {
+router.post('/setup', loginRateLimit, asyncHandler(async (req, res) => {
   const count = await prisma.user.count();
   if (count > 0) {
     return res.status(403).json({ error: 'Setup already completed' });
   }
 
   const { username, password } = readCredentials(req.body);
+  if (!setupTokenMatches(req.body?.setupToken)) {
+    recordFailedAttempt(ipKey(req));
+    throw new AuthorizationError('Setup token is missing or incorrect');
+  }
   if (password.length < MIN_PASSWORD_LENGTH) {
     throw new ValidationError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
   }
