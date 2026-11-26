@@ -1,14 +1,15 @@
 /*
- * Admin page layout: tabs instead of one long scroll.
+ * Admin page layout: an app shell. The page itself never scrolls.
  *
- *   iPhone  (< 768px):  sticky header · content · tab bar FIXED to the bottom
- *   iPad    (768-1199): sticky header with tabs along its bottom edge · content
+ *   iPhone  (< 768px):  header · tab content · tab bar along the bottom
+ *   iPad    (768-1199): header with tabs along its bottom edge · tab content
  *   Desktop (>= 1200):  same, plus the "Not yet on the lobby" panel on the right
  *
- * The window is the only scroll container (no inner overflow:auto), so iOS
- * Safari's toolbars collapse normally and position:fixed/sticky behave.
- * Content gets bottom padding equal to the tab bar + home-indicator inset so
- * nothing ever sits behind the bar. Per-tab scroll positions live in Admin.tsx.
+ * .admin-shell is exactly one screen tall (100dvh) and overflow:hidden. Header
+ * and tab bar are plain flex items that never move; only .admin-scroll (the tab
+ * content) and .admin-aside scroll, and only when their content is taller than
+ * the space left. A tab that fits does not scroll at all. Per-tab scroll
+ * positions (of .admin-scroll) live in Admin.tsx.
  *
  * GOTCHA: don't add viewport-fit=cover / env(safe-area-inset-top) to the header.
  * On iPad and iPhone Safari that let content show above the sticky header behind
@@ -25,8 +26,9 @@
   --admin-amber: #e6a000;
   --admin-line: #e6e1da;
   --admin-tabbar-h: 58px;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--admin-bg);
   color: #333;
   font-family: var(--theme-font-family, 'Nunito'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -34,16 +36,14 @@
   flex-direction: column;
 }
 html:has(.admin-shell), body:has(.admin-shell) { background: #f5f0eb; }
-/* index.css gives phones `html, body { overflow: auto }` for the lobby screen. That
-   makes <body> its own (non-scrolling) scroll container, so the sticky header
-   scrolled away on iPhone. On admin the window must be the only scroller. */
-html:has(.admin-shell) { overflow: visible !important; height: auto !important; }
-body:has(.admin-shell) { overflow-x: clip !important; overflow-y: visible !important; height: auto !important; }
+/* The window never scrolls on admin (index.css gives phones `html, body
+   { overflow: auto }` for the lobby screen, so this needs !important). */
+html:has(.admin-shell), body:has(.admin-shell) { overflow: hidden !important; height: 100% !important; overscroll-behavior: none; }
 
 /* ---------- Header ---------- */
 .admin-header {
-  position: sticky;
-  top: 0;
+  flex: none;
+  position: relative;
   z-index: 100;
   background: linear-gradient(135deg, var(--theme-header-gradient-start, #222721) 0%, var(--theme-header-gradient-end, #222721) 100%);
   color: #fff;
@@ -184,13 +184,20 @@ a.admin-hbtn { text-decoration: none; }
 
 /* ---------- Body ---------- */
 .admin-body {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
   display: flex;
-  justify-content: center;
-  gap: 28px;
+}
+/* The one scroller for tab content. Full width so the wheel/swipe works anywhere
+   and the scrollbar sits at the screen edge; the column inside is centered. */
+.admin-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
@@ -198,6 +205,7 @@ a.admin-hbtn { text-decoration: none; }
   width: 100%;
   max-width: 780px;
   min-width: 0;
+  margin: 0 auto;
   padding-top: 20px;
   padding-bottom: 24px;
   color: #333;
@@ -208,15 +216,11 @@ a.admin-hbtn { text-decoration: none; }
 
 /* Desktop side panel */
 .admin-aside {
-  width: 320px;
+  width: 344px;
   flex-shrink: 0;
-  padding-top: 20px;
-}
-.admin-aside .admin-changes {
-  position: sticky;
-  top: calc(var(--admin-header-h, 110px) + 20px);
-  max-height: calc(100vh - var(--admin-header-h, 110px) - 40px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px max(24px, env(safe-area-inset-right, 0px)) 20px 0;
 }
 
 /* ---------- Changes panel ---------- */
@@ -351,19 +355,14 @@ a.admin-hbtn { text-decoration: none; }
   .admin-header-row { padding: 8px 12px 10px; }
   .admin-brand img { height: 28px; }
   .admin-brand h1 { font-size: 17px; }
-  .admin-body { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
-  .admin-page {
-    padding-top: 12px;
-    /* Never let the last card hide behind the fixed tab bar */
-    padding-bottom: calc(var(--admin-tabbar-h) + env(safe-area-inset-bottom, 0px) + 20px);
-  }
+  .admin-scroll { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+  .admin-page { padding-top: 12px; padding-bottom: 16px; }
   .admin-toast { bottom: calc(var(--admin-tabbar-h) + env(safe-area-inset-bottom, 0px) + 12px); }
 
+  /* Last flex item of the shell, so content can never sit behind it */
   .admin-tabbar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    flex: none;
+    position: relative;
     z-index: 100;
     display: grid;
     grid-template-columns: repeat(4, 1fr);

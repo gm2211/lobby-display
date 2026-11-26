@@ -141,18 +141,6 @@ export default function Admin() {
     }
   }, [config?.dashboardTitle]);
 
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (previewOpen || historyOpen || reviewOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [previewOpen, historyOpen, reviewOpen]);
-
   const publish = async () => {
     try {
       const result = await api.post('/api/snapshots');
@@ -196,21 +184,23 @@ export default function Admin() {
     : ['services', 'events', 'advisories', 'appearance', 'settings'];
 
   // Each tab keeps its own scroll position; tapping the active tab scrolls to top
+  // (the page itself never scrolls: .admin-scroll is the one scroller for tabs)
+  const scrollRef = useRef<HTMLDivElement>(null);
   const scrollByTab = useRef<Partial<Record<AdminTab, number>>>({});
   const pendingScroll = useRef<number | null>(null);
   const selectTab = useCallback((next: AdminTab) => {
     if (next === shownTab) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    scrollByTab.current[shownTab] = window.scrollY;
+    scrollByTab.current[shownTab] = scrollRef.current?.scrollTop ?? 0;
     pendingScroll.current = scrollByTab.current[next] ?? 0;
     setTabState(next);
     try { history.replaceState(null, '', `#${next}`); } catch { /* ignore */ }
   }, [shownTab]);
   useLayoutEffect(() => {
     if (pendingScroll.current === null) return;
-    window.scrollTo(0, pendingScroll.current);
+    if (scrollRef.current) scrollRef.current.scrollTop = pendingScroll.current;
     pendingScroll.current = null;
   }, [shownTab]);
   useEffect(() => {
@@ -221,7 +211,7 @@ export default function Admin() {
 
   // Tint Safari's toolbars to match the header. Deliberately NO viewport-fit=cover:
   // with it, iPad/iPhone Safari draws page content behind its floating toolbar
-  // above the sticky header, and env(safe-area-inset-top) adds a dark band.
+  // above the header, and env(safe-area-inset-top) adds a dark band.
   useEffect(() => {
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const created = !meta;
@@ -236,17 +226,6 @@ export default function Admin() {
       if (created) meta?.remove();
       else if (meta) meta.content = original;
     };
-  }, []);
-
-  // Sticky things below the header need its height
-  const headerRef = useRef<HTMLElement>(null);
-  const [headerH, setHeaderH] = useState(64);
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => setHeaderH(el.offsetHeight));
-    ro.observe(el);
-    return () => ro.disconnect();
   }, []);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -281,12 +260,12 @@ export default function Admin() {
   const runFromMenu = (fn: () => void) => () => { setMenuOpen(false); fn(); };
 
   return (
-    <div className={`admin-shell${hasChanges ? ' has-changes' : ''}`} style={{ ['--admin-header-h' as string]: `${headerH}px` }}>
+    <div className={`admin-shell${hasChanges ? ' has-changes' : ''}`}>
       <RuntimeThemeOverride config={published?.config || null} />
       {saveError && (
         <div role="alert" className="admin-toast" onClick={() => setSaveError(null)}>{saveError}</div>
       )}
-      <header ref={headerRef} className="admin-header">
+      <header className="admin-header">
         <div className="admin-header-row">
           <div className="admin-brand">
             {(published?.config?.logoUrl || theme.logoUrl) && (
@@ -332,6 +311,7 @@ export default function Admin() {
       </header>
 
       <div className="admin-body">
+        <div ref={scrollRef} className="admin-scroll">
         <main className="admin-page">
           <div hidden={show('services')}>
             <ServicesSection services={services} config={config} onSave={onSave} hasChanged={sectionChanges.services} publishedServices={published?.services || null} />
@@ -355,6 +335,7 @@ export default function Admin() {
             Brought to you by <a href="https://github.com/gm2211" target="_blank" rel="noopener noreferrer">gm2211</a>
           </footer>
         </main>
+        </div>
         {isWide && <aside className="admin-aside">{changesPanel}</aside>}
       </div>
 

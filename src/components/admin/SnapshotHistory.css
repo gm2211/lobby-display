@@ -1,10 +1,9 @@
 /*
  * History page ("time machine"). Full-screen layer over the admin page.
  *
- * Fixed flex column: top (header + scrubber) and tray never move, only
- * .tm-scroll scrolls. This is the one place admin has an inner scroller: it is
- * an overlay, like the old modal, and the editor underneath keeps its window
- * scroll and mounted tabs. Body scroll is locked while it is open (Admin.tsx).
+ * Same app-shell rule as the rest of admin (Admin.css): the page never
+ * scrolls. Fixed flex column: top (header + scrubber) and tray never move, only
+ * .tm-scroll scrolls, and only when the list is taller than the space left.
  *
  * Class rules only: no border shorthand mixed with longhand (CLAUDE.md).
  */
