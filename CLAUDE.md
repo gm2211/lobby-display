@@ -187,6 +187,8 @@ Requires env vars: `E2E_ADMIN_USER`, `E2E_ADMIN_PASS`, `E2E_EDITOR_USER`, `E2E_E
 
 `e2e-staging.yml` runs automatically after every push to main (triggered by the auto-tag workflow deploying to staging). Also runs nightly and on manual `workflow_dispatch`.
 
+After a push it waits until `GET /api/version` on staging reports the pushed commit (Render sets `RENDER_GIT_COMMIT`, written by `scripts/render-build.sh`) before testing; `/api/health` alone answers from the previous build while Render is still building. If the admin login is rejected, `e2e/auth.setup.ts` fails with the server's message: that means the `E2E_*` GitHub secrets don't match a user on staging.
+
 ### Production Promotion Gate
 
 `promote.sh` checks E2E workflow status via `gh run list` before allowing promotion. If E2E failed or hasn't run, promotion is blocked. Use `--force` for emergencies:
