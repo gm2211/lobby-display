@@ -8,6 +8,7 @@
  * - shared/theme/colorUtils.ts - Palette generation
  */
 import { useState, useEffect, useRef } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { themes } from '../../../../shared/theme/registry';
@@ -175,12 +176,40 @@ export function AppearanceSection({ config, onSave, hasChanged, publishedConfig 
   return (
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
       <h2
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         onClick={() => setExpanded(e => !e)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(x => !x); } }}
         style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
       >
-        <span style={{ fontSize: '12px', color: '#999', transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
         Appearance
         {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
+        {/* Disclosure chevron (SVG, not a ▶ character, which iOS renders as an emoji) */}
+        <span
+          aria-hidden="true"
+          style={{
+            marginLeft: 'auto',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: '#e0e0e0',
+            background: '#fafafa',
+            color: '#666',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <ChevronDown
+            size={18}
+            strokeWidth={2.25}
+            style={{ transition: 'transform 0.15s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          />
+        </span>
       </h2>
 
       {expanded && (
