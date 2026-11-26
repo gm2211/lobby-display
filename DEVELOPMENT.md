@@ -43,6 +43,9 @@ icons in `src/components/admin/EditorIcons.tsx`:
   single `actionBarUndoStyle` "Undo remove" button.
 - Editing an existing item opens its form inside the card (`EventsSection` `renderForm(true)`);
   adding or copying opens the form at the top of the section.
+- Services: no drag handle (pad the top with `paddingLeft: 12px`); bar is Status · Note · Delete.
+  The status cell is `<StatusSelect variant="bar">`, a native `<select>` laid invisibly over the
+  whole cell so the full 44px target opens the iOS picker.
 
 ### Optimistic writes (keep the admin snappy)
 

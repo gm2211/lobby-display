@@ -3,7 +3,8 @@
  *
  * PURPOSE:
  * Manages building service statuses (elevators, HVAC, etc).
- * Shows a table with inline status editing and notes.
+ * One card per service (same card + action bar as Events): name, note and
+ * state chips on top; a Status · Note · Delete bar underneath.
  *
  * BEHAVIOR:
  * - Add new services via expandable form
@@ -34,28 +35,16 @@ import type { Service, BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { DEFAULTS } from '../../../constants';
 import {
-  smallBtn, smallBtnDanger, smallBtnSuccess, btn,
-  inputStyle, sectionStyle, sectionChangedStyle, formGroupStyle,
-  formLabelStyle, markedForDeletionStyle, itemChangedStyle, listCardStyle, smallBtnPrimary,
+  smallBtn, btn, inputStyle, sectionStyle, sectionChangedStyle, formGroupStyle,
+  formLabelStyle, smallBtnPrimary, smallBtnInfo,
+  editorCardStyle, editorCardChangedStyle, editorCardDeletedStyle, editorCardTopStyle,
+  editorCardBodyStyle, editorCardTitleStyle, editorCardTextStyle, editorCardMetaStyle,
+  actionBarStyle, actionBarButtonStyle, actionBarButtonFirstStyle, actionBarPrimaryStyle,
+  actionBarDangerStyle, actionBarUndoStyle, chipStyle, chipDraftStyle, chipEditedStyle, chipRemovingStyle,
 } from '../../../styles';
+import { EditIcon, TrashIcon, UndoIcon } from '../EditorIcons';
 import { StatusSelect } from '../StatusSelect';
 import { SpeedSlider } from '../SpeedSlider';
-import type { CSSProperties } from 'react';
-
-/** Small rounded label next to a service name (Draft / Deleting) */
-function tagStyle(color: string, background: string): CSSProperties {
-  return {
-    fontSize: '10px',
-    fontWeight: 700,
-    letterSpacing: '0.4px',
-    textTransform: 'uppercase',
-    color,
-    background,
-    borderRadius: '999px',
-    padding: '1px 7px',
-    flexShrink: 0,
-  };
-}
 
 /** Number input that allows free typing and commits on blur/Enter.
  *  Uses type="text" + inputMode="numeric" to avoid browser quirks with
@@ -106,6 +95,9 @@ function NumberInput({ value, min, max, onCommit, style }: {
     />
   );
 }
+
+/** Name and note of a service that will be removed on publish */
+const struck: React.CSSProperties = { textDecoration: 'line-through', opacity: 0.5 };
 
 interface ServicesSectionProps {
   /** Current service list */
@@ -215,9 +207,9 @@ export function ServicesSection({
         </button>
       )}
 
-      {/* Services list: one card per service, same visual language as the Events list */}
+      {/* Services list: one card per service, same components as the Events list */}
       {services.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', fontSize: '13px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {services.map(s => {
             const pub = getPublishedService(s.id);
             const isNewDraft = !pub;
@@ -249,142 +241,86 @@ export function ServicesSection({
             return (
               <div
                 key={s.id}
-                className="service-card"
                 style={{
-                  ...listCardStyle,
-                  background: '#fff',
-                  flexWrap: 'wrap',
-                  gap: '8px 12px',
-                  ...(isMarkedForDeletion
-                    ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
-                    : {}),
-                  ...(hasItemChanges ? itemChangedStyle : {}),
+                  ...editorCardStyle,
+                  ...(hasItemChanges ? editorCardChangedStyle : {}),
+                  ...(isMarkedForDeletion ? editorCardDeletedStyle : {}),
                 }}
               >
-                {/* Name + note */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    flex: '1 1 90px',
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#333' }}>{s.name}</span>
-                    {isNewDraft && !isMarkedForDeletion && (
-                      <span style={tagStyle('var(--theme-color-secondary-700)', 'var(--theme-color-secondary-50)')} title="Not published yet">
-                        Draft
-                      </span>
+                <div style={{ ...editorCardTopStyle, paddingLeft: '12px' /* no drag handle */ }}>
+                  <div style={editorCardBodyStyle}>
+                    <span style={{ ...editorCardTitleStyle, ...(isMarkedForDeletion ? struck : {}) }}>{s.name}</span>
+                    {isExpanded ? (
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input
+                          style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                          placeholder="Note shown under the service"
+                          value={editingNotes[s.id] ?? s.notes ?? ''}
+                          onChange={e => setEditingNotes({ ...editingNotes, [s.id]: e.target.value })}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') saveNotes();
+                            else if (e.key === 'Escape') cancelNotes();
+                          }}
+                          autoFocus
+                        />
+                        <button style={{ ...smallBtn, ...smallBtnPrimary, marginLeft: 0, padding: '8px 12px' }} onClick={saveNotes}>
+                          Save
+                        </button>
+                        <button style={{ ...smallBtn, ...smallBtnInfo, marginLeft: 0, padding: '8px 12px' }} onClick={cancelNotes}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      s.notes && (
+                        <span style={{ ...editorCardTextStyle, ...(isMarkedForDeletion ? struck : {}) }}>{s.notes}</span>
+                      )
                     )}
-                    {isMarkedForDeletion && (
-                      <span style={tagStyle('#c62828', '#fff0f0')} title="Will be deleted on publish">
-                        Deleting
-                      </span>
+                    {(isNewDraft || hasItemChanges || isMarkedForDeletion) && (
+                      <div style={editorCardMetaStyle}>
+                        {isMarkedForDeletion ? (
+                          <span style={{ ...chipStyle, ...chipRemovingStyle }}>Removing</span>
+                        ) : isNewDraft ? (
+                          <span style={{ ...chipStyle, ...chipDraftStyle }}>Draft</span>
+                        ) : (
+                          <span style={{ ...chipStyle, ...chipEditedStyle }}>Edited</span>
+                        )}
+                        {statusChanged && !isMarkedForDeletion && <span>was {pub.status}</span>}
+                        {notesChanged && !isMarkedForDeletion && <span>note changed</span>}
+                      </div>
                     )}
                   </div>
-
-                  {isMarkedForDeletion ? (
-                    s.notes ? <span style={{ fontSize: '12px', color: '#888', opacity: 0.6 }}>{s.notes}</span> : null
-                  ) : isExpanded ? (
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <input
-                        style={{ ...inputStyle, flex: 1, minWidth: 0, fontSize: '13px', padding: '5px 10px' }}
-                        placeholder="Note shown under the service…"
-                        value={editingNotes[s.id] ?? s.notes ?? ''}
-                        onChange={e => setEditingNotes({ ...editingNotes, [s.id]: e.target.value })}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') saveNotes();
-                          else if (e.key === 'Escape') cancelNotes();
-                        }}
-                        autoFocus
-                      />
-                      <button style={{ ...smallBtn, ...smallBtnPrimary, marginLeft: 0 }} onClick={saveNotes} title="Save note">
-                        Save
-                      </button>
-                      <button style={{ ...smallBtn, marginLeft: 0 }} onClick={cancelNotes} title="Cancel">
-                        Cancel
-                      </button>
-                    </div>
-                  ) : s.notes ? (
-                    <button
-                      onClick={() => setExpandedNotes(s.id)}
-                      title="Edit note"
-                      style={{
-                        all: 'unset',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        color: '#777',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      {s.notes}
-                      {notesChanged && <span style={{ color: 'var(--theme-color-secondary-600)', marginLeft: '4px' }}>(edited)</span>}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setExpandedNotes(s.id)}
-                      style={{
-                        ...smallBtn,
-                        marginLeft: 0,
-                        alignSelf: 'flex-start',
-                        background: 'transparent',
-                        borderStyle: 'dashed',
-                        borderColor: '#ccc',
-                        color: '#777',
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                      }}
-                    >
-                      + Add note
-                    </button>
-                  )}
                 </div>
-
-                {/* Status + actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexShrink: 0 }}>
-                  {isMarkedForDeletion ? (
-                    <>
-                      <span style={{ fontSize: '12px', color: '#888' }}>{s.status}</span>
-                      <button
-                        style={{ ...smallBtn, ...smallBtnSuccess, marginLeft: 0 }}
-                        onClick={() => unmarkForDeletion(s.id)}
-                      >
-                        Undo
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                        <StatusSelect value={s.status} onChange={v => changeStatus(s, v)} />
-                        {statusChanged && (
-                          <span style={{ fontSize: '10px', color: '#888' }}>
-                            was {pub.status}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        style={{ ...smallBtn, ...smallBtnDanger, marginLeft: 0, width: '30px', height: '30px', padding: 0 }}
-                        onClick={() => markForDeletion(s.id)}
-                        title="Delete"
-                        aria-label={`Delete ${s.name}`}
-                      >
-                        ✕
-                      </button>
-                    </>
-                  )}
-                </div>
+                {isMarkedForDeletion ? (
+                  <div style={actionBarStyle(1)}>
+                    <button
+                      style={{ ...actionBarButtonStyle, ...actionBarButtonFirstStyle, ...actionBarUndoStyle }}
+                      onClick={() => unmarkForDeletion(s.id)}
+                    >
+                      <UndoIcon />Undo remove
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ ...actionBarStyle(3), gridTemplateColumns: '1.35fr 1fr 1fr' /* "Operational" fits on a phone */ }}>
+                    <StatusSelect
+                      variant="bar"
+                      value={s.status}
+                      onChange={v => changeStatus(s, v)}
+                      style={{ ...actionBarButtonFirstStyle, ...actionBarPrimaryStyle }}
+                    />
+                    <button
+                      style={actionBarButtonStyle}
+                      onClick={() => (isExpanded ? cancelNotes() : setExpandedNotes(s.id))}
+                    >
+                      <EditIcon />{s.notes ? 'Edit note' : 'Add note'}
+                    </button>
+                    <button
+                      style={{ ...actionBarButtonStyle, ...actionBarDangerStyle }}
+                      onClick={() => markForDeletion(s.id)}
+                    >
+                      <TrashIcon />Delete
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

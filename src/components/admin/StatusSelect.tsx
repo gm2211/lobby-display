@@ -25,19 +25,11 @@
  */
 import type { CSSProperties } from 'react';
 import { STATUS_COLORS } from '../../constants';
-
-/**
- * Readable text / tint per status. STATUS_COLORS are the dashboard dot colors;
- * amber and light green are too light for text on white, so text uses darker shades.
- */
-const STATUS_TEXT: Record<string, string> = {
-  Operational: '#2e7d32',
-  Maintenance: '#8a5e00',
-  Outage: '#c62828',
-};
+import { ChevronDown } from 'lucide-react';
+import { smallBtn, smallBtnInfo, actionBarButtonStyle } from '../../styles';
 
 /** Chevron drawn as an inline SVG so no native select arrow (or iOS chrome) shows */
-const CHEVRON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
+const CHEVRON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
 
 interface StatusSelectProps {
   /** Current status value */
@@ -46,25 +38,50 @@ interface StatusSelectProps {
   onChange: (value: string) => void;
   /** Optional additional styles for the wrapper */
   style?: CSSProperties;
+  /**
+   * "pill" (default): small outlined button. "bar": fills a cell of a card's
+   * action bar (actionBarButtonStyle); the native select is laid invisibly
+   * over the whole cell so the full 44px target opens the picker.
+   */
+  variant?: 'pill' | 'bar';
 }
 
 /**
- * Pill-shaped status picker: colored dot + status text on a light tint of the
- * status color. Uses a native <select> underneath (keyboard + mobile pickers
- * still work) with appearance reset so it looks the same on iOS and desktop.
+ * Status picker styled exactly like the admin's small outlined buttons
+ * (smallBtn + smallBtnInfo, e.g. the Events "Preview" button). The status
+ * colour is only a small dot; text stays neutral. Native <select> underneath
+ * (keyboard + mobile pickers still work) with appearance reset for iOS.
  */
-export function StatusSelect({ value, onChange, style }: StatusSelectProps) {
+export function StatusSelect({ value, onChange, style, variant = 'pill' }: StatusSelectProps) {
   const dot = STATUS_COLORS[value as keyof typeof STATUS_COLORS] || '#999';
-  const text = STATUS_TEXT[value] || '#333';
+  if (variant === 'bar') {
+    return (
+      <span style={{ ...actionBarButtonStyle, position: 'relative', ...style }}>
+        <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span>
+        <ChevronDown size={14} aria-hidden="true" style={{ flexShrink: 0, color: '#888' }} />
+        <select
+          aria-label="Status"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', fontSize: '16px' }}
+        >
+          <option value="Operational">Operational</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Outage">Outage</option>
+        </select>
+      </span>
+    );
+  }
   return (
     <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', ...style }}>
       <span
         aria-hidden="true"
         style={{
           position: 'absolute',
-          left: '11px',
-          width: '8px',
-          height: '8px',
+          left: '9px',
+          width: '7px',
+          height: '7px',
           borderRadius: '50%',
           background: dot,
           pointerEvents: 'none',
@@ -75,26 +92,20 @@ export function StatusSelect({ value, onChange, style }: StatusSelectProps) {
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{
+          ...smallBtn,
+          ...smallBtnInfo,
+          color: '#444',
+          marginLeft: 0,
+          width: '100%',
           appearance: 'none',
           WebkitAppearance: 'none',
           MozAppearance: 'none',
-          width: '100%',
-          minWidth: '132px',
-          padding: '5px 28px 5px 26px',
-          borderRadius: '999px',
-          borderWidth: '1px',
-          borderStyle: 'solid',
-          borderColor: `${dot}66`,
-          backgroundColor: `${dot}14`,
+          padding: '4px 24px 4px 21px',
           backgroundImage: CHEVRON,
           backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 10px center',
-          color: text,
-          fontSize: '13px',
-          fontWeight: 600,
+          backgroundPosition: 'right 8px center',
           fontFamily: 'inherit',
-          lineHeight: 1.4,
-          cursor: 'pointer',
+          lineHeight: 'normal',
         }}
       >
         <option value="Operational">Operational</option>
