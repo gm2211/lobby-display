@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Service, Event, Advisory, BuildingConfig } from '../types';
-import { api } from '../utils/api';
+import { api, mutations } from '../utils/api';
 import { smallBtn, headerBtn, headerBtnSecondary, modalOverlay, modal } from '../styles';
 import {
   SnapshotHistory,
@@ -50,8 +50,13 @@ export default function Admin() {
   };
 
   const checkDraft = useCallback(async () => {
+    const epochAtStart = mutations.epoch;
     try {
       const d = await api.get('/api/snapshots/draft-status');
+      // A write started while this GET was in flight (or is still pending):
+      // the response may predate it and would undo the optimistic update.
+      // Drop it -- the refetch scheduled after that write will bring fresh data.
+      if (mutations.epoch !== epochAtStart || mutations.pending > 0) return;
       setHasChanges(d.hasChanges);
       setSectionChanges(d.sectionChanges || { config: false, services: false, events: false, advisories: false });
       setPublished(d.published || null);
@@ -68,10 +73,20 @@ export default function Admin() {
   }, []);
 
   // onSave accepts an optional optimistic update for instant UI feedback.
-  // When optimistic data is provided, we skip the immediate refetch to avoid
-  // a race condition where the server returns stale data (before the PUT
-  // completes) and overwrites the optimistic update. Instead, we delay the
-  // sync so the fire-and-forget API request has time to land.
+  // Sections fire their API write without awaiting it, then call onSave with
+  // the expected new state. We render that immediately and resync from the
+  // server only once every in-flight write has landed (see `mutations` in
+  // utils/api.ts). A failed write triggers a resync, which rolls the UI back.
+  const resyncQueued = useRef(false);
+  const syncWhenIdle = useCallback(() => {
+    if (resyncQueued.current) return;
+    resyncQueued.current = true;
+    mutations.whenIdle().then(() => {
+      resyncQueued.current = false;
+      checkDraft();
+    });
+  }, [checkDraft]);
+
   const onSave = useCallback((optimistic?: {
     services?: Service[];
     events?: Event[];
@@ -84,12 +99,26 @@ export default function Admin() {
       if (optimistic.advisories) setAdvisories(optimistic.advisories);
       if (optimistic.config !== undefined) setConfig(optimistic.config);
       setHasChanges(true);
-      // Delay checkDraft so the API write lands before we refetch
-      setTimeout(checkDraft, 500);
+      syncWhenIdle();
     } else {
       checkDraft();
     }
-  }, [checkDraft]);
+  }, [checkDraft, syncWhenIdle]);
+
+  // Roll back + tell the user when a fire-and-forget write fails
+  const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => mutations.onError(err => {
+    setSaveError(`Couldn't save change: ${err instanceof Error ? err.message : 'Unknown error'}. Reverted.`);
+    syncWhenIdle();
+  }), [syncWhenIdle]);
+  useEffect(() => {
+    if (!saveError) return;
+    const t = setTimeout(() => setSaveError(null), 5000);
+    return () => clearTimeout(t);
+  }, [saveError]);
+
+  // Warm the CSRF token so the first write is one round trip, not two
+  useEffect(() => { api.prefetchCsrf(); }, []);
 
   useEffect(() => { checkDraft(); }, [checkDraft]);
 
@@ -151,6 +180,15 @@ export default function Admin() {
   return (
     <div style={{ ...styles.pageWrap, ...pendingBgStyle }}>
       <RuntimeThemeOverride config={published?.config || null} />
+      {saveError && (
+        <div
+          role="alert"
+          onClick={() => setSaveError(null)}
+          style={{ position: 'fixed', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: '#b71c1c', color: '#fff', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', maxWidth: 'calc(100vw - 32px)', cursor: 'pointer' }}
+        >
+          {saveError}
+        </div>
+      )}
       <header className="admin-header" style={{ ...styles.header, background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
           {(published?.config?.logoUrl || theme.logoUrl) && (
