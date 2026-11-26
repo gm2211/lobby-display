@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { loadTheme, DEFAULT_THEME_ID } from '../../shared/theme/registry';
 
 describe('theme registry defaults', () => {
-  it('defaults to the 77 Hudson (teal) theme so a fresh DB matches prod', () => {
+  it('defaults to the 77 Hudson (prod charcoal-green) theme so a fresh DB matches prod', () => {
     expect(DEFAULT_THEME_ID).toBe('77-hudson');
     expect(loadTheme().id).toBe('77-hudson');
     expect(loadTheme('').id).toBe('77-hudson'); // BuildingConfig.themePreset defaults to ""
-    expect(loadTheme().colors.primary500).toBe('#1a5c5a');
+    expect(loadTheme().colors.primary500).toBe('#222721');
   });
 
   it('still honors an explicit preset', () => {
