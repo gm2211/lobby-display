@@ -82,6 +82,8 @@ model BuildingConfig {
   /// "untilNextUpdate" (show until the events list is next published), or "off".
   newBadgeMode         String @default("days")
   newBadgeDays         Int    @default(7)
+  /// Background color of the NEW badge pill (hex). Brand yellow by default.
+  newBadgeColor        String @default("#ffc72c")
 
   @@schema("public")
 }

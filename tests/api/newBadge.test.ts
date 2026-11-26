@@ -81,6 +81,18 @@ describe('NEW badge bookkeeping on publish', () => {
     expect(ok.body.newBadgeDays).toBe(14);
   });
 
+  it('defaults the badge color to brand yellow and accepts only hex colors', async () => {
+    const agent = await authenticatedAgent();
+    const initial = await agent.get('/api/config').expect(200);
+    expect(initial.body.newBadgeColor).toBe('#ffc72c');
+    await agent.put('/api/config').send({ newBadgeColor: 'red; background:url(x)' }).expect(400);
+    const ok = await agent.put('/api/config').send({ newBadgeColor: '#123456' }).expect(200);
+    expect(ok.body.newBadgeColor).toBe('#123456');
+    await agent.post('/api/snapshots').expect(200);
+    const latest = await agent.get('/api/snapshots/latest').expect(200);
+    expect(latest.body.config.newBadgeColor).toBe('#123456');
+  });
+
   it('draft-status is unchanged right after publish', async () => {
     await testPrisma.buildingConfig.create({ data: {} });
     const agent = await authenticatedAgent();

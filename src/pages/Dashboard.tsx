@@ -6,7 +6,8 @@ import AdvisoryTicker from '../components/AdvisoryTicker';
 import { DEFAULTS } from '../constants';
 import { RuntimeThemeOverride } from '../theme/RuntimeThemeOverride';
 import type { Service, Event, Advisory, BuildingConfig } from '../types';
-import { isEventNew } from '../../shared/newBadge';
+import { isEventNew, NEW_BADGE_DEFAULTS } from '../../shared/newBadge';
+import { isHexColor } from '../../shared/theme/safeCss';
 
 export default function Dashboard() {
   const [services, setServices] = useState<Service[]>([]);
@@ -103,7 +104,14 @@ export default function Dashboard() {
   const servicesScrollSpeed = config?.servicesScrollSpeed ?? DEFAULTS.SERVICES_SCROLL_SPEED;
 
   return (
-    <div className="dashboard-page" style={styles.page}>
+    <div
+      className="dashboard-page"
+      style={{
+        ...styles.page,
+        // Hex-validated on write (server/routes/config.ts), read by EventCard's NEW pill
+        ['--new-badge-color' as string]: isHexColor(config?.newBadgeColor) ? config?.newBadgeColor : NEW_BADGE_DEFAULTS.color,
+      }}
+    >
       <RuntimeThemeOverride config={config} />
       <Header config={config} />
       <div className="dashboard-body" style={styles.body}>

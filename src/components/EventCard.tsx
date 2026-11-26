@@ -53,7 +53,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: '10px',
     padding: '2px 8px',
     borderRadius: '999px',
-    background: 'var(--theme-color-secondary-500, #c9a84c)',
+    background: 'var(--new-badge-color, #ffc72c)',
     color: '#1a1a1a',
     fontSize: '11px',
     fontWeight: 800,
