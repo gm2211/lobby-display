@@ -382,15 +382,11 @@ export default function Admin() {
       )}
 
       {historyOpen && (
-        <div style={modalOverlay} onClick={() => setHistoryOpen(false)}>
-          <div style={{ ...modal, width: '700px', maxWidth: '90vw', height: 'auto', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <strong style={{ color: '#333' }}>Version History</strong>
-              <button style={smallBtn} onClick={() => setHistoryOpen(false)}>Close</button>
-            </div>
-            <SnapshotHistory onRestore={() => { onSave(); setHistoryOpen(false); }} onItemRestore={onSave} />
-          </div>
-        </div>
+        <SnapshotHistory
+          onClose={() => setHistoryOpen(false)}
+          onRestore={() => { onSave(); setHistoryOpen(false); }}
+          onItemRestore={onSave}
+        />
       )}
 
 

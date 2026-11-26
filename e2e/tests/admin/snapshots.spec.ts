@@ -86,78 +86,61 @@ test.describe('Admin - Snapshots (Draft/Publish Workflow)', () => {
     await expect(page.getByRole('banner').getByText(/unpublished change/i)).not.toBeVisible({ timeout: 10_000 });
   });
 
-  test('History modal shows published versions', async ({ page }) => {
+  test('History page shows published versions', async ({ page }) => {
     await page.goto('/admin');
 
-    // Click the History button
-    await page.getByRole('button', { name: 'History' }).click();
+    // Open History (header button on iPad/desktop)
+    await page.getByRole('button', { name: 'History', exact: true }).click();
+    const history = page.getByRole('dialog', { name: 'History' });
+    await expect(history).toBeVisible();
 
-    // The history modal should open with "Version History" heading
-    // Use .first() to handle multiple matches (e.g., heading + modal title)
-    await expect(page.locator('strong', { hasText: 'Version History' }).first()).toBeVisible();
+    // The scrubber names the version being viewed, and the lobby preview is shown
+    await expect(history.locator('.tm-cur b')).toHaveText(/^v\d+ · /, { timeout: 10_000 });
+    await expect(history.locator('iframe[title^="Lobby screen at v"]')).toBeVisible();
+    await expect(history.getByRole('heading', { name: 'Different from now' })).toBeVisible();
 
-    // There should be at least one version listed (from our publish test above)
-    // Versions are displayed as "vN" links
-    const versionEntries = page.locator('text=/^v\\d+$/');
-    const count = await versionEntries.count();
-    expect(count).toBeGreaterThanOrEqual(0); // At least 0 historical entries
-
-    // Close the modal
-    await page.getByRole('button', { name: 'Close' }).click();
-    await expect(page.locator('strong', { hasText: 'Version History' }).first()).not.toBeVisible();
+    // Back to the editor
+    await history.getByRole('button', { name: 'Editor' }).click();
+    await expect(history).not.toBeVisible();
   });
 
   test('Can restore from history', async ({ page }) => {
-    // First, create some test data and publish it
-    const svc = await testData.createService({
+    // Two publishes so there is a version before live
+    await testData.createService({
       name: `[e2e-test] Restore History ${Date.now()}`,
       status: 'Operational',
     });
-
-    // Publish to create a snapshot containing our service
     await api.post('/api/snapshots');
-
-    // Now create another service and publish again to have a second version
-    const svc2 = await testData.createService({
+    await testData.createService({
       name: `[e2e-test] After Restore ${Date.now()}`,
       status: 'Maintenance',
     });
     await api.post('/api/snapshots');
 
-    // Get snapshots to find a version we can restore
     const snapshotsRes = await api.get('/api/snapshots');
     const snapshots = await snapshotsRes.json();
-
-    // We need at least 2 snapshots for a meaningful restore test
     if (snapshots.length < 2) {
       test.skip();
       return;
     }
+    const previous = snapshots[1].version;
 
     await page.goto('/admin');
+    await page.getByRole('button', { name: 'History', exact: true }).click();
+    const history = page.getByRole('dialog', { name: 'History' });
 
-    // Open History modal
-    await page.getByRole('button', { name: 'History' }).click();
-    await expect(page.locator('strong', { hasText: 'Version History' }).first()).toBeVisible();
+    // History opens on the version before live
+    await expect(history.locator('.tm-cur b')).toHaveText(new RegExp(`^v${previous} · `), { timeout: 10_000 });
 
-    // Click on the first historical version to expand its diff
-    const firstVersion = page.locator('text=/^v\\d+$/').first();
-    await firstVersion.click();
+    // The service added after that version can be removed from the draft from here
+    await expect(history.getByText(/\[e2e-test\] After Restore/)).toBeVisible({ timeout: 10_000 });
 
-    // The "Restore All" button should appear for the selected version
-    await expect(page.getByRole('button', { name: 'Restore All' })).toBeVisible({
-      timeout: 5_000,
-    });
-
-    // Accept the confirmation dialog for restore
     page.on('dialog', dialog => dialog.accept());
+    await history.getByRole('button', { name: `Restore v${previous}` }).click();
 
-    // Click Restore All
-    await page.getByRole('button', { name: 'Restore All' }).click();
-
-    // After restore, the modal should close and the page should reflect the restored state
-    // The "Unpublished changes" indicator may or may not appear depending on state
-    await page.waitForTimeout(2000);
+    // Full restore closes History and leaves an unpublished draft
+    await expect(history).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('banner').getByText(/unpublished change/i)).toBeVisible({ timeout: 10_000 });
   });
 
   test('Publish removes soft-deleted items from the snapshot', async ({ page }) => {
