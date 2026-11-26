@@ -189,6 +189,8 @@ Requires env vars: `E2E_ADMIN_USER`, `E2E_ADMIN_PASS`, `E2E_EDITOR_USER`, `E2E_E
 
 After a push it waits until `GET /api/version` on staging reports the pushed commit (Render sets `RENDER_GIT_COMMIT`, written by `scripts/render-build.sh`) before testing; `/api/health` alone answers from the previous build while Render is still building. If the admin login is rejected, `e2e/auth.setup.ts` fails with the server's message: that means the `E2E_*` GitHub secrets don't match a user on staging.
 
+Before testing, `scripts/ensure-e2e-users.ts` creates the three E2E users on staging (or fixes their role/password) from the same `E2E_*` secrets, writing straight to the staging DB via the `STAGING_DATABASE_URL` secret (refuses non-staging DB names). So a recreated staging DB no longer breaks E2E. Without that secret the step is skipped and the users must exist already.
+
 ### Production Promotion Gate
 
 `promote.sh` checks E2E workflow status via `gh run list` before allowing promotion. If E2E failed or hasn't run, promotion is blocked. Use `--force` for emergencies:

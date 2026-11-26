@@ -54,6 +54,22 @@ jobs:
           E2E_BASE_URL: https://seven7-hudson-staging.onrender.com
           EXPECTED_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
 
+      - name: Ensure E2E users on staging
+        # A recreated staging DB has no test users, so every run would fail at login.
+        # Create or fix them from the same secrets the tests use (staging DB only;
+        # skipped with a notice if STAGING_DATABASE_URL isn't set).
+        run: |
+          npx prisma generate
+          npx tsx scripts/ensure-e2e-users.ts
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          E2E_ADMIN_USER: ${{ secrets.E2E_ADMIN_USER }}
+          E2E_ADMIN_PASS: ${{ secrets.E2E_ADMIN_PASS }}
+          E2E_EDITOR_USER: ${{ secrets.E2E_EDITOR_USER }}
+          E2E_EDITOR_PASS: ${{ secrets.E2E_EDITOR_PASS }}
+          E2E_VIEWER_USER: ${{ secrets.E2E_VIEWER_USER }}
+          E2E_VIEWER_PASS: ${{ secrets.E2E_VIEWER_PASS }}
+
       - name: Run E2E tests
         run: npx playwright test --config=e2e/playwright.config.ts
         env:
