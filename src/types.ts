@@ -141,6 +141,8 @@ export interface BuildingConfig {
   newBadgeMode?: string;
   /** Days the NEW badge shows after an event first goes live (mode "days") */
   newBadgeDays?: number;
+  /** NEW badge pill color (hex), set in Appearance */
+  newBadgeColor?: string;
 }
 
 /**

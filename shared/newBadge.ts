@@ -14,7 +14,7 @@
  */
 export type NewBadgeMode = 'days' | 'untilNextUpdate' | 'off';
 
-export const NEW_BADGE_DEFAULTS = { mode: 'days' as NewBadgeMode, days: 7 };
+export const NEW_BADGE_DEFAULTS = { mode: 'days' as NewBadgeMode, days: 7, color: '#ffc72c' };
 
 export const NEW_BADGE_MODES: { value: NewBadgeMode; label: string }[] = [
   { value: 'days', label: 'For a number of days' },

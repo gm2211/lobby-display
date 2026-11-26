@@ -79,7 +79,7 @@ export async function getCurrentState(db: Db = prisma) {
 
   return {
     config: config
-      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos, themePreset: config.themePreset, fontFamily: config.fontFamily, fontScale: config.fontScale, colorPrimary: config.colorPrimary, colorSecondary: config.colorSecondary, newBadgeMode: config.newBadgeMode, newBadgeDays: config.newBadgeDays }
+      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos, themePreset: config.themePreset, fontFamily: config.fontFamily, fontScale: config.fontScale, colorPrimary: config.colorPrimary, colorSecondary: config.colorSecondary, newBadgeMode: config.newBadgeMode, newBadgeDays: config.newBadgeDays, newBadgeColor: config.newBadgeColor }
       : null,
     services: {
       items: services.map(s => ({
@@ -166,7 +166,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // ============================================================================
 
 export interface SnapshotData {
-  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string; newBadgeMode?: string; newBadgeDays?: number } | null;
+  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string; newBadgeMode?: string; newBadgeDays?: number; newBadgeColor?: string } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
@@ -301,6 +301,7 @@ export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
           colorSecondary: data.config?.colorSecondary ?? '',
           newBadgeMode: data.config?.newBadgeMode ?? NEW_BADGE_DEFAULTS.mode,
           newBadgeDays: data.config?.newBadgeDays ?? NEW_BADGE_DEFAULTS.days,
+          newBadgeColor: data.config?.newBadgeColor ?? NEW_BADGE_DEFAULTS.color,
           scrollSpeed: data.events?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
           tickerSpeed: data.advisories?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
           servicesScrollSpeed: data.services?.scrollSpeed ?? DEFAULT_SPEEDS.SERVICES,
@@ -560,7 +561,7 @@ router.get(
     const publishedAdvisoriesNorm = normalizeSection(published.advisories as { items?: unknown[] } | null);
 
     // Normalize config comparison: fill in defaults for fields missing from old snapshots
-    const configDefaults = { themePreset: '', fontFamily: '', fontScale: 100, colorPrimary: '', colorSecondary: '', newBadgeMode: NEW_BADGE_DEFAULTS.mode, newBadgeDays: NEW_BADGE_DEFAULTS.days };
+    const configDefaults = { themePreset: '', fontFamily: '', fontScale: 100, colorPrimary: '', colorSecondary: '', newBadgeMode: NEW_BADGE_DEFAULTS.mode, newBadgeDays: NEW_BADGE_DEFAULTS.days, newBadgeColor: NEW_BADGE_DEFAULTS.color };
     const publishedConfigNorm = published.config ? { ...configDefaults, ...published.config } : null;
     // Use sorted keys for order-independent comparison
     const sortedStringify = (obj: unknown) => JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());

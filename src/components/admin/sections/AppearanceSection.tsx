@@ -13,6 +13,7 @@ import type { BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { themes } from '../../../../shared/theme/registry';
 import { generatePalette } from '../../../../shared/theme/colorUtils';
+import { NEW_BADGE_DEFAULTS } from '../../../../shared/newBadge';
 import {
   inputStyle, selectStyle, sectionStyle, sectionChangedStyle,
   formGroupStyle, formLabelStyle, smallBtn, modalOverlay, modal,
@@ -400,6 +401,7 @@ export function AppearanceSection({ config, onSave, hasChanged, publishedConfig 
             <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <ColorPicker label="Primary" value={form.colorPrimary} onChange={v => setForm(f => ({ ...f, colorPrimary: v }))} />
               <ColorPicker label="Secondary" value={form.colorSecondary} onChange={v => setForm(f => ({ ...f, colorSecondary: v }))} />
+              <NewBadgeColorPicker config={config} onSave={onSave} />
             </div>
           </div>
         </div>
@@ -506,6 +508,56 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * NEW badge pill color. Saved on its own (not part of the theme form) so picking a
+ * theme preset never resets it. Default is the brand yellow in shared/newBadge.ts.
+ */
+function NewBadgeColorPicker({ config, onSave }: {
+  config: BuildingConfig | null;
+  onSave: (optimistic?: Record<string, unknown>) => void;
+}) {
+  const saved = config?.newBadgeColor || NEW_BADGE_DEFAULTS.color;
+  const [value, setValue] = useState(saved);
+  useEffect(() => { setValue(saved); }, [saved]);
+
+  useEffect(() => {
+    if (value === saved || !/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    const timer = setTimeout(() => {
+      api.put('/api/config', { newBadgeColor: value });
+      onSave({ config: config ? { ...config, newBadgeColor: value } : null });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [value, saved, config, onSave]);
+
+  return (
+    <div data-testid="new-badge-color">
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#888', marginBottom: '6px' }}>
+        NEW badge
+        <input
+          type="color"
+          aria-label="NEW badge color"
+          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : NEW_BADGE_DEFAULTS.color}
+          onChange={e => setValue(e.target.value)}
+          style={{ width: '28px', height: '28px', padding: 0, borderWidth: 0, borderStyle: 'none', background: 'none', cursor: 'pointer' }}
+        />
+        <span style={{
+          display: 'inline-block', padding: '2px 8px', borderRadius: '999px', background: value,
+          color: '#1a1a1a', fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em',
+        }}>NEW</span>
+      </label>
+      {value.toLowerCase() !== NEW_BADGE_DEFAULTS.color && (
+        <button
+          type="button"
+          onClick={() => setValue(NEW_BADGE_DEFAULTS.color)}
+          style={{ fontSize: '11px', color: '#888', background: 'none', borderWidth: 0, borderStyle: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+        >
+          Reset to brand yellow
+        </button>
       )}
     </div>
   );

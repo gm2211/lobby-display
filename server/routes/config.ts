@@ -48,6 +48,7 @@ const FIELD_RULES: Record<string, Rule> = {
   colorPrimary: v => (v === '' || isHexColor(v) ? null : 'must be a hex color like #1a2b3c'),
   colorSecondary: v => (v === '' || isHexColor(v) ? null : 'must be a hex color like #1a2b3c'),
   newBadgeMode: v => (NEW_BADGE_MODES.includes(String(v)) ? null : `must be one of: ${NEW_BADGE_MODES.join(', ')}`),
+  newBadgeColor: v => (isHexColor(v) ? null : 'must be a hex color like #ffc72c'),
   newBadgeDays: v => {
     const days = Number(v);
     return Number.isInteger(days) && days >= 1 && days <= 365 ? null : 'must be a whole number from 1 to 365';
