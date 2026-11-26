@@ -61,6 +61,12 @@ export interface Event {
   sortOrder: number;
   /** Draft deletion flag. Always returned by the API. */
   markedForDeletion: boolean;
+  /** When the event first went live (ISO). null = draft. Absent in pre-badge snapshots. */
+  firstPublishedAt?: string | null;
+  /** Set in published snapshots: went live in the latest publish that changed the events list */
+  newInLastUpdate?: boolean;
+  /** Computed client-side by the dashboard (see shared/newBadge.ts) */
+  isNew?: boolean;
 }
 
 /**
@@ -131,6 +137,10 @@ export interface BuildingConfig {
   colorPrimary: string;
   /** Secondary/accent color hex (empty = theme default) */
   colorSecondary: string;
+  /** NEW badge mode on event cards: "days" | "untilNextUpdate" | "off" */
+  newBadgeMode?: string;
+  /** Days the NEW badge shows after an event first goes live (mode "days") */
+  newBadgeDays?: number;
 }
 
 /**

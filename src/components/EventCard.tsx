@@ -17,7 +17,10 @@ export default function EventCard({ event }: { event: Event }) {
       backgroundRepeat: 'no-repeat',
     }}>
       <div style={styles.content}>
-        <h3 style={styles.title}>{event.title}</h3>
+        <h3 style={styles.title}>
+          {event.title}
+          {event.isNew && <span style={styles.newBadge} data-testid="new-badge">NEW</span>}
+        </h3>
         {event.subtitle && <p style={styles.subtitle}>{event.subtitle}</p>}
         {detailsMarkdown.trim() && (
           <div
@@ -45,6 +48,19 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '18px 22px',
   },
   title: { fontSize: '18px', fontWeight: 700, color: '#fff', margin: '0 0 4px' },
+  newBadge: {
+    display: 'inline-block',
+    marginLeft: '10px',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    background: 'var(--theme-color-secondary-500, #c9a84c)',
+    color: '#1a1a1a',
+    fontSize: '11px',
+    fontWeight: 800,
+    letterSpacing: '0.08em',
+    verticalAlign: 'middle',
+    lineHeight: 1.6,
+  },
   subtitle: { fontSize: '14px', color: 'var(--theme-color-secondary-200)', margin: '0 0 10px', fontStyle: 'italic' },
   accentBar: { height: '4px', width: '100%' },
 };

@@ -43,6 +43,9 @@ model Event {
   sortOrder         Int       @default(0)
   markedForDeletion Boolean   @default(false)
   deletedAt         DateTime?
+  /// When this event first went live (set on publish). Null = never published (draft).
+  /// Drives the "NEW" badge; see shared/newBadge.ts.
+  firstPublishedAt  DateTime?
 
   @@schema("public")
 }
@@ -75,6 +78,10 @@ model BuildingConfig {
   fontScale            Int    @default(100)
   colorPrimary         String @default("")
   colorSecondary       String @default("")
+  /// NEW badge on events: "days" (show for newBadgeDays after first publish),
+  /// "untilNextUpdate" (show until the events list is next published), or "off".
+  newBadgeMode         String @default("days")
+  newBadgeDays         Int    @default(7)
 
   @@schema("public")
 }
