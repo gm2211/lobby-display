@@ -51,6 +51,7 @@ import { broadcast } from '../sse.js';
 import { asyncHandler, NotFoundError, ValidationError } from '../middleware/errorHandler.js';
 import { DEFAULT_SPEEDS, DEFAULT_FONTS } from '../constants.js';
 import { invalidateThemeCache } from '../themeCSS.js';
+import { NEW_BADGE_DEFAULTS } from '../../shared/newBadge.js';
 
 const router = Router();
 
@@ -72,7 +73,7 @@ async function getCurrentState() {
 
   return {
     config: config
-      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos, themePreset: config.themePreset, fontFamily: config.fontFamily, fontScale: config.fontScale, colorPrimary: config.colorPrimary, colorSecondary: config.colorSecondary }
+      ? { dashboardTitle: config.dashboardTitle, titleFontSize: config.titleFontSize, timezone: config.timezone, logoUrl: config.logoUrl, customLogos: config.customLogos, themePreset: config.themePreset, fontFamily: config.fontFamily, fontScale: config.fontScale, colorPrimary: config.colorPrimary, colorSecondary: config.colorSecondary, newBadgeMode: config.newBadgeMode, newBadgeDays: config.newBadgeDays }
       : null,
     services: {
       items: services.map(s => ({
@@ -99,6 +100,7 @@ async function getCurrentState() {
         accentColor: e.accentColor,
         sortOrder: e.sortOrder,
         markedForDeletion: e.markedForDeletion,
+        firstPublishedAt: e.firstPublishedAt ? e.firstPublishedAt.toISOString() : null,
       })),
       scrollSpeed: config?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
     },
@@ -163,7 +165,7 @@ function toApiFormat(state: ReturnType<typeof getCurrentState> extends Promise<i
 // ============================================================================
 
 export interface SnapshotData {
-  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string } | null;
+  config?: { dashboardTitle?: string; titleFontSize?: number; timezone?: string; logoUrl?: string; customLogos?: string; themePreset?: string; fontFamily?: string; fontScale?: number; colorPrimary?: string; colorSecondary?: string; newBadgeMode?: string; newBadgeDays?: number } | null;
   services?: { items?: ServiceItem[]; scrollSpeed?: number; servicesFontSize?: number; notesFontSize?: number; notesFontWeight?: number };
   events?: { items?: EventItem[]; scrollSpeed?: number };
   advisories?: { items?: AdvisoryItem[]; tickerSpeed?: number };
@@ -188,6 +190,10 @@ interface EventItem {
   accentColor: string;
   sortOrder: number;
   markedForDeletion?: boolean;
+  /** ISO time the event first went live; null = draft; absent in pre-badge snapshots */
+  firstPublishedAt?: string | null;
+  /** True if the event first went live in the latest publish that changed the events list */
+  newInLastUpdate?: boolean;
 }
 
 interface AdvisoryItem {
@@ -235,6 +241,7 @@ export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
           imageUrl: e.imageUrl,
           accentColor: e.accentColor,
           sortOrder: e.sortOrder,
+          firstPublishedAt: e.firstPublishedAt ? new Date(e.firstPublishedAt) : null,
         })),
       });
     }
@@ -266,6 +273,8 @@ export async function restoreFromSnapshot(data: SnapshotData): Promise<void> {
           fontScale: data.config?.fontScale ?? DEFAULT_FONTS.FONT_SCALE,
           colorPrimary: data.config?.colorPrimary ?? '',
           colorSecondary: data.config?.colorSecondary ?? '',
+          newBadgeMode: data.config?.newBadgeMode ?? NEW_BADGE_DEFAULTS.mode,
+          newBadgeDays: data.config?.newBadgeDays ?? NEW_BADGE_DEFAULTS.days,
           scrollSpeed: data.events?.scrollSpeed ?? DEFAULT_SPEEDS.EVENTS,
           tickerSpeed: data.advisories?.tickerSpeed ?? DEFAULT_SPEEDS.TICKER,
           servicesScrollSpeed: data.services?.scrollSpeed ?? DEFAULT_SPEEDS.SERVICES,
@@ -388,6 +397,87 @@ function computeDiff(from: SnapshotData, to: SnapshotData) {
 }
 
 // ============================================================================
+// NEW BADGE BOOKKEEPING (see shared/newBadge.ts)
+// ============================================================================
+
+type SnapshotState = Awaited<ReturnType<typeof getCurrentState>> & {
+  events: { items: Array<EventItem & { newInLastUpdate?: boolean }> };
+};
+
+/**
+ * Set firstPublishedAt on events going live for the first time.
+ * Events that already appear in an older snapshot (published before this feature
+ * existed) are backfilled with that snapshot's time, so they don't all look new.
+ */
+async function stampEventPublishTimes(publishedAt: Date): Promise<void> {
+  const unstamped = await prisma.event.findMany({
+    where: { firstPublishedAt: null, markedForDeletion: false },
+    select: { id: true },
+  });
+  if (unstamped.length === 0) return;
+
+  const pending = new Set(unstamped.map(e => e.id));
+  const firstSeen = new Map<number, Date>();
+  const snapshots = await prisma.publishedSnapshot.findMany({
+    orderBy: { version: 'asc' },
+    select: { data: true, publishedAt: true },
+  });
+  for (const snap of snapshots) {
+    if (pending.size === 0) break;
+    const data = JSON.parse(snap.data) as SnapshotData | { events?: EventItem[] };
+    const items = Array.isArray((data as { events?: unknown }).events)
+      ? ((data as { events: EventItem[] }).events)
+      : ((data as SnapshotData).events?.items ?? []);
+    for (const item of items) {
+      if (pending.has(item.id) && !item.markedForDeletion) {
+        firstSeen.set(item.id, snap.publishedAt);
+        pending.delete(item.id);
+      }
+    }
+  }
+
+  await prisma.$transaction([
+    ...[...firstSeen].map(([id, at]) =>
+      prisma.event.update({ where: { id }, data: { firstPublishedAt: at } }),
+    ),
+    prisma.event.updateMany({
+      where: { id: { in: [...pending] } },
+      data: { firstPublishedAt: publishedAt },
+    }),
+  ]);
+}
+
+/** Content fields that count as "the events list was updated" (order included). */
+function eventsFingerprint(items: EventItem[] = []): string {
+  return JSON.stringify(
+    items
+      .filter(e => !e.markedForDeletion)
+      .map(e => [e.id, e.title, e.subtitle, e.details, e.imageUrl, e.accentColor, e.sortOrder]),
+  );
+}
+
+/**
+ * Set newInLastUpdate on each event in the snapshot being published.
+ * If the events list changed, new = went live in this publish.
+ * If it didn't change (e.g. only services were edited), keep the previous flags.
+ */
+export function markNewInLastUpdate(
+  state: { events: { items: Array<EventItem & { newInLastUpdate?: boolean }> } },
+  previous: SnapshotData | null,
+  publishedAt: Date,
+): void {
+  const prevItems = previous?.events?.items ?? [];
+  const eventsChanged = !previous || eventsFingerprint(prevItems) !== eventsFingerprint(state.events.items);
+  const prevFlags = new Map(prevItems.map(e => [e.id, e.newInLastUpdate === true]));
+  const stamp = publishedAt.toISOString();
+  for (const item of state.events.items) {
+    item.newInLastUpdate = eventsChanged
+      ? item.firstPublishedAt === stamp
+      : prevFlags.get(item.id) ?? false;
+  }
+}
+
+// ============================================================================
 // ROUTES
 // ============================================================================
 
@@ -440,14 +530,16 @@ router.get(
     const currentServicesNorm = normalizeSection(current.services as { items?: unknown[] }, ['lastChecked']);
     const publishedServicesNorm = normalizeSection(published.services as { items?: unknown[] } | null, ['lastChecked']);
 
-    const currentEventsNorm = normalizeSection(current.events as { items?: unknown[] });
-    const publishedEventsNorm = normalizeSection(published.events as { items?: unknown[] } | null);
+    // firstPublishedAt/newInLastUpdate are publish bookkeeping, not editable content
+    const eventBookkeeping = ['firstPublishedAt', 'newInLastUpdate'];
+    const currentEventsNorm = normalizeSection(current.events as { items?: unknown[] }, eventBookkeeping);
+    const publishedEventsNorm = normalizeSection(published.events as { items?: unknown[] } | null, eventBookkeeping);
 
     const currentAdvisoriesNorm = normalizeSection(current.advisories as { items?: unknown[] });
     const publishedAdvisoriesNorm = normalizeSection(published.advisories as { items?: unknown[] } | null);
 
     // Normalize config comparison: fill in defaults for fields missing from old snapshots
-    const configDefaults = { themePreset: '', fontFamily: '', fontScale: 100, colorPrimary: '', colorSecondary: '' };
+    const configDefaults = { themePreset: '', fontFamily: '', fontScale: 100, colorPrimary: '', colorSecondary: '', newBadgeMode: NEW_BADGE_DEFAULTS.mode, newBadgeDays: NEW_BADGE_DEFAULTS.days };
     const publishedConfigNorm = published.config ? { ...configDefaults, ...published.config } : null;
     // Use sorted keys for order-independent comparison
     const sortedStringify = (obj: unknown) => JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());
@@ -516,12 +608,18 @@ router.post(
       prisma.advisory.deleteMany({ where: { markedForDeletion: true } }),
     ]);
 
-    const state = await getCurrentState();
+    const publishedAt = new Date();
+    await stampEventPublishTimes(publishedAt);
+
+    const state: SnapshotState = await getCurrentState();
+    const previous = await prisma.publishedSnapshot.findFirst({ orderBy: { version: 'desc' } });
+    markNewInLastUpdate(state, previous ? (JSON.parse(previous.data) as SnapshotData) : null, publishedAt);
+
     const version = await getNextVersion();
     const publishedBy = req.session?.user?.username ?? 'admin';
 
     await prisma.publishedSnapshot.create({
-      data: { version, data: JSON.stringify(state), publishedBy },
+      data: { version, data: JSON.stringify(state), publishedBy, publishedAt },
     });
 
     invalidateThemeCache();

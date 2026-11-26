@@ -31,8 +31,10 @@ const parseEventDetails = (e: Event): Event & { details: string[] } => ({
 });
 
 // Stringify details array when creating
+// firstPublishedAt is set by the publish flow only (see snapshots.ts), never by clients.
 const transformCreate = (data: Record<string, unknown>): Record<string, unknown> => {
-  const { details, ...rest } = data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { details, firstPublishedAt: _ignored, ...rest } = data;
   return {
     ...rest,
     details: JSON.stringify(details || []),
@@ -41,7 +43,8 @@ const transformCreate = (data: Record<string, unknown>): Record<string, unknown>
 
 // Stringify details array when updating (only if present)
 const transformUpdate = (data: Record<string, unknown>): Record<string, unknown> => {
-  const { details, ...rest } = data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { details, firstPublishedAt: _ignored, ...rest } = data;
   if (details !== undefined) {
     return { ...rest, details: JSON.stringify(details) };
   }

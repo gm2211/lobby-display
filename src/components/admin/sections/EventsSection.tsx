@@ -50,6 +50,7 @@ import { ImagePicker } from '../ImagePicker';
 import { MarkdownEditor } from '../MarkdownEditor';
 import { EventCardPreview } from '../EventCardPreview';
 import { SpeedSlider } from '../SpeedSlider';
+import { NewBadgeSetting } from '../NewBadgeSetting';
 import { useDragReorder } from '../useDragReorder';
 
 interface EventsSectionProps {
@@ -414,6 +415,7 @@ export function EventsSection({
           onSave({ config: config ? { ...config, scrollSpeed: val } : null });
         }}
       />
+      <NewBadgeSetting config={config} onSave={onSave as (o?: Record<string, unknown>) => void} />
     </section>
   );
 }

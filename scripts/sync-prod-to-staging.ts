@@ -105,6 +105,8 @@ export function toSnapshotData(api: LatestApi, prodBase: string): SnapshotData {
           fontScale: c.fontScale,
           colorPrimary: c.colorPrimary,
           colorSecondary: c.colorSecondary,
+          newBadgeMode: c.newBadgeMode,
+          newBadgeDays: c.newBadgeDays,
         }
       : null,
     services: {

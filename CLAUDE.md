@@ -44,6 +44,7 @@ If conversation exceeds **~150k tokens**, run `/compact` proactively before cont
 | `Events.details` type | JSON string in DB, `string[]` via API transforms in `createCrudRoutes` |
 | Default theme | Empty `BuildingConfig.themePreset` (fresh DB) resolves to `DEFAULT_THEME_ID` in `shared/theme/registry.ts` (`77-hudson`, prod's charcoal-green look, primary `#222721`). The `default` (slate blue) preset is only used when picked explicitly |
 | Preview mode | Dashboard accepts `?preview=true` query param for draft content |
+| NEW badge | `Event.firstPublishedAt` is set **only by publish** (clients can't set it; events routes strip it). Each snapshot bakes `newInLastUpdate` per event, carried over when a publish doesn't change the events list. Rules live in `shared/newBadge.ts` (`BuildingConfig.newBadgeMode` = `days` / `untilNextUpdate` / `off`, `newBadgeDays` default 7). Draft-status diffs ignore both bookkeeping fields |
 | SSE updates | Publish triggers real-time push via `server/sse.ts` |
 | Snapshots | See `server/routes/snapshots.ts` header comment for draft/publish workflow |
 | Role-based access | GETs require auth only (any role). Mutations (POST/PUT/DELETE) require `EDITOR` or `ADMIN`. See `dashboardProtect` in `server/app.ts` |

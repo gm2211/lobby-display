@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from '../components/Header';
 import ServiceTable from '../components/ServiceTable';
 import AutoScrollCards from '../components/AutoScrollCards';
@@ -6,6 +6,7 @@ import AdvisoryTicker from '../components/AdvisoryTicker';
 import { DEFAULTS } from '../constants';
 import { RuntimeThemeOverride } from '../theme/RuntimeThemeOverride';
 import type { Service, Event, Advisory, BuildingConfig } from '../types';
+import { isEventNew } from '../../shared/newBadge';
 
 export default function Dashboard() {
   const [services, setServices] = useState<Service[]>([]);
@@ -86,6 +87,12 @@ export default function Dashboard() {
     }
   }, [config?.dashboardTitle]);
 
+  // Recomputed on every fetch (SSE or 30s poll), so day-based badges expire on their own.
+  const eventsWithBadge = useMemo(
+    () => events.map(e => ({ ...e, isNew: isEventNew(e, config) })),
+    [events, config],
+  );
+
   const scrollSpeed = config?.scrollSpeed ?? DEFAULTS.SCROLL_SPEED;
   const tickerSpeed = config?.tickerSpeed ?? DEFAULTS.TICKER_SPEED;
   const servicesScrollSpeed = config?.servicesScrollSpeed ?? DEFAULTS.SERVICES_SCROLL_SPEED;
@@ -96,7 +103,7 @@ export default function Dashboard() {
       <Header config={config} />
       <div className="dashboard-body" style={styles.body}>
         <ServiceTable services={services} scrollSpeed={servicesScrollSpeed} config={config} />
-        <AutoScrollCards events={events} scrollSpeed={scrollSpeed} />
+        <AutoScrollCards events={eventsWithBadge} scrollSpeed={scrollSpeed} />
       </div>
       <AdvisoryTicker advisories={advisories} tickerSpeed={tickerSpeed} />
       <style>{`
