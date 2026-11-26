@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 const MAX_CLIENTS = 100;
+const MAX_CLIENTS_PER_USER = 40;
 const KEEPALIVE_INTERVAL_MS = 30_000;
 
 // Global clients: no channel filter — receive all broadcasts
@@ -17,11 +18,18 @@ function totalClients(): number {
   return count;
 }
 
+// One login can't use up every slot. A lobby login is shared by several screens, so
+// the per-user limit is generous; it only stops a single account hogging the pool.
+const connectionsByUser = new Map<number, number>();
+
 export function sseHandler(req: Request, res: Response) {
-  if (totalClients() >= MAX_CLIENTS) {
+  const userId = req.session?.user?.id;
+  const userCount = userId !== undefined ? connectionsByUser.get(userId) ?? 0 : 0;
+  if (totalClients() >= MAX_CLIENTS || userCount >= MAX_CLIENTS_PER_USER) {
     res.status(503).json({ error: 'Too many SSE connections' });
     return;
   }
+  if (userId !== undefined) connectionsByUser.set(userId, userCount + 1);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -49,8 +57,16 @@ export function sseHandler(req: Request, res: Response) {
     }
   }, KEEPALIVE_INTERVAL_MS);
 
+  let cleaned = false;
   function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
     clearInterval(keepalive);
+    if (userId !== undefined) {
+      const left = (connectionsByUser.get(userId) ?? 1) - 1;
+      if (left > 0) connectionsByUser.set(userId, left);
+      else connectionsByUser.delete(userId);
+    }
     if (channel) {
       const set = channelClients.get(channel);
       if (set) {

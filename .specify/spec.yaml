@@ -726,6 +726,48 @@ requirements:
       services list is still empty and there are no unpublished changes.
     evidence_format: "Screenshot of the admin page after the restart."
 
+  - id: req-viewer-published-only
+    description: >
+      A VIEWER (lobby screen) login can load the dashboard and its live updates, but
+      cannot read draft content, settings or version history through the API.
+    verification: agent
+    validation_plan: >
+      1. Log in as a VIEWER. 2. The dashboard at / renders published content.
+      3. GET /api/snapshots/latest returns 200. 4. GET /api/services, /api/config and
+      /api/snapshots each return 403.
+    evidence_format: "Status codes of the four requests and a dashboard screenshot."
+
+  - id: req-uploads-survive-deploys
+    description: >
+      Uploaded images are stored in the database, so they are still displayed after
+      the application is redeployed or restarted.
+    verification: agent
+    validation_plan: >
+      1. Upload an image for an event and publish. 2. Redeploy or restart the server.
+      3. The event card on the dashboard still shows the image.
+    evidence_format: "Dashboard screenshot after the restart."
+
+  - id: req-upload-error-shown
+    description: >
+      When an image upload fails (too large, wrong type), the image picker shows the
+      reason next to the field.
+    verification: agent
+    validation_plan: >
+      1. In the event editor choose 'Upload file...' and pick a file over 5 MB.
+      2. An 'Upload failed: File too large (max 5MB)' message appears under the picker.
+    evidence_format: "Screenshot of the error under the image picker."
+
+  - id: req-no-inline-scripts
+    description: >
+      Production pages send a Content-Security-Policy that only allows scripts from the
+      app's own origin, and every page works under it with no console errors.
+    verification: agent
+    validation_plan: >
+      1. Load /login, / and /admin on a production build. 2. The response has a
+      Content-Security-Policy header with script-src 'self'. 3. The browser console
+      shows no CSP violations.
+    evidence_format: "Response header and console output."
+
 assumptions:
   - type: url_reachable
     url: "${TARGET_BASE_URL}"

@@ -271,3 +271,90 @@ describe('restoring snapshots', () => {
     expect(await testPrisma.advisory.count()).toBe(1);
   });
 });
+
+describe('lobby (VIEWER) login only sees published content', () => {
+  it('can read the published snapshot', async () => {
+    const viewer = await authenticatedAgent('VIEWER');
+    expect((await viewer.get('/api/snapshots/latest')).status).toBe(200);
+  });
+
+  it.each(['/api/services', '/api/events', '/api/advisories', '/api/config', '/api/snapshots', '/api/snapshots/draft-status'])(
+    'cannot read %s',
+    async path => {
+      const viewer = await authenticatedAgent('VIEWER');
+      expect((await viewer.get(path)).status).toBe(403);
+    },
+  );
+
+  it('editors can still read draft data', async () => {
+    const editor = await authenticatedAgent('EDITOR');
+    expect((await editor.get('/api/services')).status).toBe(200);
+    expect((await editor.get('/api/snapshots/draft-status')).status).toBe(200);
+  });
+});
+
+describe('uploads are stored in the database', () => {
+  it('keeps the image bytes in UploadedImage and serves them with long caching', async () => {
+    const agent = await authenticatedAgent('EDITOR');
+    const up = await agent
+      .post('/api/upload')
+      .attach('file', PNG_MAGIC, { filename: 'photo.png', contentType: 'image/png' });
+    const id = String(up.body.url).split('/').pop() as string;
+
+    const row = await testPrisma.uploadedImage.findUnique({ where: { id } });
+    expect(row?.mimeType).toBe('image/png');
+    expect(Buffer.from(row!.data).equals(PNG_MAGIC)).toBe(true);
+
+    const res = await request(app).get(up.body.url);
+    expect(res.headers['cache-control']).toContain('immutable');
+    expect(Buffer.from(res.body).equals(PNG_MAGIC)).toBe(true);
+  });
+});
+
+describe('first-time setup token', () => {
+  const account = { username: 'firstadmin', password: 'password123' };
+
+  it('is not needed when SETUP_TOKEN is unset', async () => {
+    delete process.env.SETUP_TOKEN;
+    const status = await request(app).get('/api/auth/setup-required');
+    expect(status.body).toEqual({ required: true, tokenRequired: false });
+    expect((await request(app).post('/api/auth/setup').send(account)).status).toBe(200);
+  });
+
+  it('is required when SETUP_TOKEN is set', async () => {
+    process.env.SETUP_TOKEN = 'correct-horse';
+    try {
+      expect((await request(app).get('/api/auth/setup-required')).body.tokenRequired).toBe(true);
+      expect((await request(app).post('/api/auth/setup').send(account)).status).toBe(403);
+      expect((await request(app).post('/api/auth/setup').send({ ...account, setupToken: 'wrong' })).status).toBe(403);
+      expect(await testPrisma.user.count()).toBe(0);
+      expect((await request(app).post('/api/auth/setup').send({ ...account, setupToken: 'correct-horse' })).status).toBe(200);
+    } finally {
+      delete process.env.SETUP_TOKEN;
+    }
+  });
+});
+
+describe('publish', () => {
+  it('a brand-new snapshot built from the draft shows no unpublished changes', async () => {
+    const agent = await authenticatedAgent('EDITOR');
+    await agent.post('/api/services').send({ name: 'Elevator' }).expect(200);
+    await agent.put('/api/config').send({ dashboardTitle: 'Lobby' }).expect(200);
+    const { getCurrentState } = await import('../../server/routes/snapshots.js');
+    await testPrisma.publishedSnapshot.create({ data: { version: 1, data: JSON.stringify(await getCurrentState()) } });
+
+    const status = await agent.get('/api/snapshots/draft-status');
+    expect(status.body.hasChanges).toBe(false);
+  });
+
+  it('creates consecutive versions and removes marked items in one step', async () => {
+    const agent = await authenticatedAgent('EDITOR');
+    const svc = (await agent.post('/api/services').send({ name: 'Old boiler' })).body;
+    expect((await agent.post('/api/snapshots')).body.version).toBe(1);
+    await agent.delete(`/api/services/${svc.id}`).expect(200);
+    const second = await agent.post('/api/snapshots');
+    expect(second.body.version).toBe(2);
+    expect(second.body.state.services).toEqual([]);
+    expect(await testPrisma.service.count()).toBe(0);
+  });
+});

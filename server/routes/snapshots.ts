@@ -42,6 +42,8 @@
  * - Restores must NOT delete + recreate services: ServiceStatusLog cascades on delete
  *   and the Metrics history would be lost. Use upsertService().
  * - Always broadcast after publishing to notify connected clients
+ * - Publish runs in ONE transaction (deletes, NEW-badge stamps, snapshot row).
+ *   Helpers it calls take the transaction client (`db`), never the global `prisma`
  *
  * RELATED FILES:
  * - server/sse.ts - broadcast() for real-time updates
@@ -65,13 +67,15 @@ const router = Router();
  * Get current draft state organized by section.
  * Each section contains its items + any config that affects it.
  */
-async function getCurrentState() {
-  const [services, events, advisories, config] = await Promise.all([
-    prisma.service.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.event.findMany({ orderBy: { sortOrder: 'asc' } }),
-    prisma.advisory.findMany(),
-    prisma.buildingConfig.findFirst({ orderBy: { id: 'asc' } }),
-  ]);
+/** The Prisma client, or a transaction client inside prisma.$transaction(). */
+type Db = Pick<typeof prisma, 'service' | 'event' | 'advisory' | 'buildingConfig' | 'publishedSnapshot'>;
+
+export async function getCurrentState(db: Db = prisma) {
+  // Sequential on purpose: a transaction client runs one query at a time.
+  const services = await db.service.findMany({ orderBy: { sortOrder: 'asc' } });
+  const events = await db.event.findMany({ orderBy: { sortOrder: 'asc' } });
+  const advisories = await db.advisory.findMany();
+  const config = await db.buildingConfig.findFirst({ orderBy: { id: 'asc' } });
 
   return {
     config: config
@@ -119,11 +123,6 @@ async function getCurrentState() {
 }
 
 /** Get next version number for new snapshot. */
-async function getNextVersion(): Promise<number> {
-  const latest = await prisma.publishedSnapshot.findFirst({ orderBy: { version: 'desc' } });
-  return (latest?.version ?? 0) + 1;
-}
-
 /** Transform section-based format to flat API format for frontend.
  *  Also handles legacy flat format (services/events/advisories as plain arrays)
  *  for backward compatibility with old snapshots.
@@ -436,8 +435,8 @@ type SnapshotState = Awaited<ReturnType<typeof getCurrentState>> & {
  * Events that already appear in an older snapshot (published before this feature
  * existed) are backfilled with that snapshot's time, so they don't all look new.
  */
-async function stampEventPublishTimes(publishedAt: Date): Promise<void> {
-  const unstamped = await prisma.event.findMany({
+async function stampEventPublishTimes(db: Db, publishedAt: Date): Promise<void> {
+  const unstamped = await db.event.findMany({
     where: { firstPublishedAt: null, markedForDeletion: false },
     select: { id: true },
   });
@@ -445,16 +444,13 @@ async function stampEventPublishTimes(publishedAt: Date): Promise<void> {
 
   const pending = new Set(unstamped.map(e => e.id));
   const firstSeen = new Map<number, Date>();
-  const snapshots = await prisma.publishedSnapshot.findMany({
+  const snapshots = await db.publishedSnapshot.findMany({
     orderBy: { version: 'asc' },
     select: { data: true, publishedAt: true },
   });
   for (const snap of snapshots) {
     if (pending.size === 0) break;
-    const data = JSON.parse(snap.data) as SnapshotData | { events?: EventItem[] };
-    const items = Array.isArray((data as { events?: unknown }).events)
-      ? ((data as { events: EventItem[] }).events)
-      : ((data as SnapshotData).events?.items ?? []);
+    const items = sectionItems((JSON.parse(snap.data) as SnapshotData).events);
     for (const item of items) {
       if (pending.has(item.id) && !item.markedForDeletion) {
         firstSeen.set(item.id, snap.publishedAt);
@@ -463,15 +459,13 @@ async function stampEventPublishTimes(publishedAt: Date): Promise<void> {
     }
   }
 
-  await prisma.$transaction([
-    ...[...firstSeen].map(([id, at]) =>
-      prisma.event.update({ where: { id }, data: { firstPublishedAt: at } }),
-    ),
-    prisma.event.updateMany({
-      where: { id: { in: [...pending] } },
-      data: { firstPublishedAt: publishedAt },
-    }),
-  ]);
+  for (const [id, at] of firstSeen) {
+    await db.event.update({ where: { id }, data: { firstPublishedAt: at } });
+  }
+  await db.event.updateMany({
+    where: { id: { in: [...pending] } },
+    data: { firstPublishedAt: publishedAt },
+  });
 }
 
 /** Content fields that count as "the events list was updated" (order included). */
@@ -628,25 +622,29 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    // Hard-delete items marked for deletion
-    await prisma.$transaction([
-      prisma.service.deleteMany({ where: { markedForDeletion: true } }),
-      prisma.event.deleteMany({ where: { markedForDeletion: true } }),
-      prisma.advisory.deleteMany({ where: { markedForDeletion: true } }),
-    ]);
-
-    const publishedAt = new Date();
-    await stampEventPublishTimes(publishedAt);
-
-    const state: SnapshotState = await getCurrentState();
-    const previous = await prisma.publishedSnapshot.findFirst({ orderBy: { version: 'desc' } });
-    markNewInLastUpdate(state, previous ? (JSON.parse(previous.data) as SnapshotData) : null, publishedAt);
-
-    const version = await getNextVersion();
     const publishedBy = req.session?.user?.username ?? 'admin';
+    const publishedAt = new Date();
 
-    await prisma.publishedSnapshot.create({
-      data: { version, data: JSON.stringify(state), publishedBy, publishedAt },
+    // One transaction: if any step fails, nothing is deleted and no version is created.
+    // Two publishes at once can't both win either: `version` is unique, so the second
+    // one fails and rolls back (reported as a 409).
+    const { state, version } = await prisma.$transaction(async tx => {
+      // Hard-delete items marked for deletion
+      await tx.service.deleteMany({ where: { markedForDeletion: true } });
+      await tx.event.deleteMany({ where: { markedForDeletion: true } });
+      await tx.advisory.deleteMany({ where: { markedForDeletion: true } });
+
+      await stampEventPublishTimes(tx, publishedAt);
+
+      const state: SnapshotState = await getCurrentState(tx);
+      const previous = await tx.publishedSnapshot.findFirst({ orderBy: { version: 'desc' } });
+      markNewInLastUpdate(state, previous ? (JSON.parse(previous.data) as SnapshotData) : null, publishedAt);
+
+      const version = (previous?.version ?? 0) + 1;
+      await tx.publishedSnapshot.create({
+        data: { version, data: JSON.stringify(state), publishedBy, publishedAt },
+      });
+      return { state, version };
     });
 
     invalidateThemeCache();

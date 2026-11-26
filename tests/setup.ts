@@ -21,6 +21,7 @@ beforeEach(async () => {
   await testPrisma.session.deleteMany();
   await testPrisma.serviceStatusLog.deleteMany();
   await testPrisma.message.deleteMany();
+  await testPrisma.uploadedImage.deleteMany();
   await testPrisma.user.deleteMany();
   await testPrisma.service.deleteMany();
   await testPrisma.event.deleteMany();

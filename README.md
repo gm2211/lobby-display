@@ -54,7 +54,8 @@ server/
   constants.ts        # Server-side defaults (scroll speeds, session lifetimes, password length)
   routes/             # REST API endpoints (services, events, advisories, config, snapshots, auth, users)
   middleware/         # errorHandler (400/404/409/500), auth (401/403, roles), csrf, sessionUser (re-checks the user each request)
-  utils/              # CRUD route factory, storage abstraction, Prisma session store
+  utils/              # CRUD route factory, Prisma session store
+  login.html, login.js # Standalone login/setup page (script is a separate file because of the CSP)
 src/
   pages/
     Dashboard.tsx     # Lobby display (auto-scroll, real-time)

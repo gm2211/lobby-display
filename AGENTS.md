@@ -30,7 +30,7 @@ Uses 3-branch deploys: `main` (trunk) → `deploy/staging` (auto) → `deploy/pr
 
 ## Auth Model
 
-Three roles: `VIEWER` (read-only), `EDITOR` (manage content), `ADMIN` (manage users + content). GETs require auth only; mutations require EDITOR+.
+Three roles: `VIEWER` (lobby screens: published snapshot + live updates only), `EDITOR` (manage content), `ADMIN` (manage users + content). Draft data, settings and history need EDITOR+, reads included.
 
 ## Landing the Plane (Session Completion)
 
