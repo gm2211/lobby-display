@@ -16,17 +16,17 @@ export const seventy7HudsonTheme: TenantTheme = {
   sidebarBrandText: '77 Hudson',
 
   colors: {
-    // Primary teal palette
-    primary50: '#e8f5f5',
-    primary100: '#c0e2e2',
-    primary200: '#94cccc',
-    primary300: '#63b6b5',
-    primary400: '#3aa3a1',
-    primary500: '#1a5c5a',
-    primary600: '#164f4d',
-    primary700: '#0f3d3b',
-    primary800: '#092b29',
-    primary900: '#041918',
+    // Primary charcoal-green palette, matching prod (generatePalette('#222721'))
+    primary50: '#f2f3f1',
+    primary100: '#c6cec4',
+    primary200: '#9aa898',
+    primary300: '#70806d',
+    primary400: '#495447',
+    primary500: '#222721',
+    primary600: '#1e221d',
+    primary700: '#191d18',
+    primary800: '#151814',
+    primary900: '#101310',
 
     // Secondary orange/amber palette
     secondary50: '#fff8e1',
@@ -62,8 +62,8 @@ export const seventy7HudsonTheme: TenantTheme = {
     pageBg: '#f5f0eb',
     surface: '#ffffff',
     surfaceHover: '#f9f9f9',
-    headerGradientStart: '#1a5c5a',
-    headerGradientEnd: '#0f3d3b',
+    headerGradientStart: '#222721',
+    headerGradientEnd: '#191d18',
   },
 
   fontFamily: "'Nunito', sans-serif",
