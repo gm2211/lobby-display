@@ -1,6 +1,6 @@
 /**
  * AppearanceSection - Visual theming (presets, logo, colors, fonts).
- * Collapsible section, collapsed by default.
+ * Always open: it has its own admin tab (Settings on iPhone), so no collapse.
  *
  * RELATED FILES:
  * - ConfigSection.tsx - Dashboard identity (title, timezone)
@@ -8,7 +8,6 @@
  * - shared/theme/colorUtils.ts - Palette generation
  */
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown } from 'lucide-react';
 import type { BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
 import { themes } from '../../../../shared/theme/registry';
@@ -68,7 +67,6 @@ function parseCustomLogos(raw: string | undefined): string[] {
 
 export function AppearanceSection({ config, onSave, hasChanged, publishedConfig }: AppearanceSectionProps) {
   const theme = useTheme();
-  const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
     logoUrl: '',
     themePreset: '',
@@ -176,44 +174,11 @@ export function AppearanceSection({ config, onSave, hasChanged, publishedConfig 
 
   return (
     <section style={{ ...sectionStyle, ...(hasChanged ? sectionChangedStyle : {}) }}>
-      <h2
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        onClick={() => setExpanded(e => !e)}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(x => !x); } }}
-        style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
-      >
+      <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
         Appearance
         {hasChanged && <span style={{ color: 'var(--theme-color-secondary-600)', fontSize: '12px' }}>●</span>}
-        {/* Disclosure chevron (SVG, not a ▶ character, which iOS renders as an emoji) */}
-        <span
-          aria-hidden="true"
-          style={{
-            marginLeft: 'auto',
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: '#e0e0e0',
-            background: '#fafafa',
-            color: '#666',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <ChevronDown
-            size={18}
-            strokeWidth={2.25}
-            style={{ transition: 'transform 0.15s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          />
-        </span>
       </h2>
 
-      {expanded && (
         <div style={{ marginTop: '12px' }}>
           {/* Theme Presets */}
           <div style={{ ...formGroupStyle, marginBottom: '12px' }}>
@@ -405,7 +370,6 @@ export function AppearanceSection({ config, onSave, hasChanged, publishedConfig 
             </div>
           </div>
         </div>
-      )}
 
       {/* Add logo modal */}
       {addLogoOpen && (
