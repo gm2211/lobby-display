@@ -32,14 +32,30 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Service, BuildingConfig } from '../../../types';
 import { api } from '../../../utils/api';
-import { STATUS_COLORS, DEFAULTS } from '../../../constants';
+import { DEFAULTS } from '../../../constants';
 import {
   smallBtn, smallBtnDanger, smallBtnSuccess, btn,
   inputStyle, sectionStyle, sectionChangedStyle, formGroupStyle,
-  formLabelStyle, markedForDeletionStyle, itemChangedStyle, draftIndicatorStyle,
+  formLabelStyle, markedForDeletionStyle, itemChangedStyle, listCardStyle, smallBtnPrimary,
 } from '../../../styles';
 import { StatusSelect } from '../StatusSelect';
 import { SpeedSlider } from '../SpeedSlider';
+import type { CSSProperties } from 'react';
+
+/** Small rounded label next to a service name (Draft / Deleting) */
+function tagStyle(color: string, background: string): CSSProperties {
+  return {
+    fontSize: '10px',
+    fontWeight: 700,
+    letterSpacing: '0.4px',
+    textTransform: 'uppercase',
+    color,
+    background,
+    borderRadius: '999px',
+    padding: '1px 7px',
+    flexShrink: 0,
+  };
+}
 
 /** Number input that allows free typing and commits on blur/Enter.
  *  Uses type="text" + inputMode="numeric" to avoid browser quirks with
@@ -199,80 +215,9 @@ export function ServicesSection({
         </button>
       )}
 
-      {/* Services Table */}
+      {/* Services list: one card per service, same visual language as the Events list */}
       {services.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            fontSize: '13px',
-            background: '#fafafa',
-            borderRadius: '8px',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: '#eee',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Header row */}
-          <div
-            className="services-grid services-grid-header"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(120px, 1fr) 140px 1fr auto',
-              background: '#f0f0f0',
-            }}
-          >
-            <div
-              style={{
-                padding: '8px 12px',
-                fontWeight: 600,
-                fontSize: '11px',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Service
-            </div>
-            <div
-              style={{
-                padding: '8px 12px',
-                fontWeight: 600,
-                fontSize: '11px',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Status
-            </div>
-            <div
-              style={{
-                padding: '8px 12px',
-                fontWeight: 600,
-                fontSize: '11px',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Notes
-            </div>
-            <div
-              style={{
-                padding: '8px 12px',
-                fontWeight: 600,
-                fontSize: '11px',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                textAlign: 'right',
-              }}
-            ></div>
-          </div>
-
-          {/* Service rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', fontSize: '13px' }}>
           {services.map(s => {
             const pub = getPublishedService(s.id);
             const isNewDraft = !pub;
@@ -282,182 +227,162 @@ export function ServicesSection({
             const hasItemChanges = !isMarkedForDeletion && !isNewDraft && (statusChanged || notesChanged);
             const isExpanded = expandedNotes === s.id && !isMarkedForDeletion;
 
+            const saveNotes = () => {
+              const newNotes = editingNotes[s.id] ?? s.notes ?? '';
+              updateNotes(s, newNotes);
+              setEditingNotes(prev => {
+                const copy = { ...prev };
+                delete copy[s.id];
+                return copy;
+              });
+              setExpandedNotes(null);
+            };
+            const cancelNotes = () => {
+              setEditingNotes(prev => {
+                const copy = { ...prev };
+                delete copy[s.id];
+                return copy;
+              });
+              setExpandedNotes(null);
+            };
+
             return (
               <div
                 key={s.id}
-                className="services-grid"
+                className="service-card"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(120px, 1fr) 140px 1fr auto',
-                  borderTop: isMarkedForDeletion
-                    ? '1px solid rgba(244, 67, 54, 0.3)'
-                    : '1px solid #eee',
-                  ...(isMarkedForDeletion ? markedForDeletionStyle : {}),
+                  ...listCardStyle,
+                  background: '#fff',
+                  flexWrap: 'wrap',
+                  gap: '8px 12px',
+                  ...(isMarkedForDeletion
+                    ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
+                    : {}),
                   ...(hasItemChanges ? itemChangedStyle : {}),
                 }}
               >
-                {/* Service name */}
+                {/* Name + note */}
                 <div
                   style={{
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
-                  }}
-                >
-                  {isNewDraft && !isMarkedForDeletion && (
-                    <span style={draftIndicatorStyle} title="New draft item">
-                      ●
-                    </span>
-                  )}
-                  {isMarkedForDeletion && (
-                    <span style={{ color: '#f44336', fontSize: '10px' }} title="Will be deleted on publish">
-                      🗑
-                    </span>
-                  )}
-                  <span style={{ fontWeight: 500 }}>{s.name}</span>
-                </div>
-
-                {/* Status */}
-                <div
-                  style={{
-                    padding: '6px 8px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: '2px',
-                  }}
-                >
-                  {isMarkedForDeletion ? (
-                    <span style={{ color: STATUS_COLORS[s.status], opacity: 0.5 }}>{s.status}</span>
-                  ) : (
-                    <>
-                      <StatusSelect
-                        value={s.status}
-                        onChange={v => changeStatus(s, v)}
-                        style={{ padding: '2px 4px', fontSize: '11px' }}
-                      />
-                      {statusChanged && (
-                        <span style={{ fontSize: '9px', color: '#888' }}>
-                          was: <span style={{ color: STATUS_COLORS[pub.status] }}>{pub.status}</span>
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Notes */}
-                <div
-                  style={{
-                    padding: '6px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
+                    gap: '4px',
+                    flex: '1 1 90px',
                     minWidth: 0,
                   }}
                 >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#333' }}>{s.name}</span>
+                    {isNewDraft && !isMarkedForDeletion && (
+                      <span style={tagStyle('var(--theme-color-secondary-700)', 'var(--theme-color-secondary-50)')} title="Not published yet">
+                        Draft
+                      </span>
+                    )}
+                    {isMarkedForDeletion && (
+                      <span style={tagStyle('#c62828', '#fff0f0')} title="Will be deleted on publish">
+                        Deleting
+                      </span>
+                    )}
+                  </div>
+
                   {isMarkedForDeletion ? (
-                    <span style={{ fontSize: '11px', color: '#666', opacity: 0.5 }}>{s.notes || '—'}</span>
+                    s.notes ? <span style={{ fontSize: '12px', color: '#888', opacity: 0.6 }}>{s.notes}</span> : null
                   ) : isExpanded ? (
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flex: 1 }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <input
-                        style={{ ...inputStyle, flex: 1, fontSize: '11px', padding: '4px 8px' }}
-                        placeholder="Note..."
+                        style={{ ...inputStyle, flex: 1, minWidth: 0, fontSize: '13px', padding: '5px 10px' }}
+                        placeholder="Note shown under the service…"
                         value={editingNotes[s.id] ?? s.notes ?? ''}
                         onChange={e => setEditingNotes({ ...editingNotes, [s.id]: e.target.value })}
                         onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const newNotes = editingNotes[s.id] ?? s.notes ?? '';
-                            updateNotes(s, newNotes);
-                            setEditingNotes(prev => {
-                              const copy = { ...prev };
-                              delete copy[s.id];
-                              return copy;
-                            });
-                            setExpandedNotes(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingNotes(prev => {
-                              const copy = { ...prev };
-                              delete copy[s.id];
-                              return copy;
-                            });
-                            setExpandedNotes(null);
-                          }
+                          if (e.key === 'Enter') saveNotes();
+                          else if (e.key === 'Escape') cancelNotes();
                         }}
                         autoFocus
                       />
-                      <button
-                        style={{ ...smallBtn, padding: '2px 6px', fontSize: '10px', marginLeft: 0 }}
-                        onClick={() => {
-                          const newNotes = editingNotes[s.id] ?? s.notes ?? '';
-                          updateNotes(s, newNotes);
-                          setEditingNotes(prev => {
-                            const copy = { ...prev };
-                            delete copy[s.id];
-                            return copy;
-                          });
-                          setExpandedNotes(null);
-                        }}
-                      >
-                        ✓
+                      <button style={{ ...smallBtn, ...smallBtnPrimary, marginLeft: 0 }} onClick={saveNotes} title="Save note">
+                        Save
+                      </button>
+                      <button style={{ ...smallBtn, marginLeft: 0 }} onClick={cancelNotes} title="Cancel">
+                        Cancel
                       </button>
                     </div>
-                  ) : (
-                    <span
+                  ) : s.notes ? (
+                    <button
+                      onClick={() => setExpandedNotes(s.id)}
+                      title="Edit note"
                       style={{
-                        fontSize: '11px',
-                        color: s.notes ? '#999' : '#555',
+                        all: 'unset',
                         cursor: 'pointer',
+                        fontSize: '12px',
+                        color: '#777',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        flex: 1,
+                        maxWidth: '100%',
                       }}
-                      onClick={() => setExpandedNotes(s.id)}
-                      title={s.notes || 'Click to add note'}
                     >
-                      {s.notes || '+ note'}
-                      {notesChanged && <span style={{ color: 'var(--theme-color-secondary-600)', marginLeft: '4px' }}>*</span>}
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div
-                  style={{
-                    padding: '6px 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: '4px',
-                  }}
-                >
-                  {isMarkedForDeletion ? (
-                    <button
-                      style={{
-                        ...smallBtn,
-                        ...smallBtnSuccess,
-                        padding: '2px 8px',
-                        fontSize: '10px',
-                        marginLeft: 0,
-                      }}
-                      onClick={() => unmarkForDeletion(s.id)}
-                    >
-                      Undo
+                      {s.notes}
+                      {notesChanged && <span style={{ color: 'var(--theme-color-secondary-600)', marginLeft: '4px' }}>(edited)</span>}
                     </button>
                   ) : (
                     <button
+                      onClick={() => setExpandedNotes(s.id)}
                       style={{
                         ...smallBtn,
-                        ...smallBtnDanger,
-                        padding: '2px 6px',
-                        fontSize: '10px',
                         marginLeft: 0,
+                        alignSelf: 'flex-start',
+                        background: 'transparent',
+                        borderStyle: 'dashed',
+                        borderColor: '#ccc',
+                        color: '#777',
+                        fontSize: '11px',
+                        padding: '2px 8px',
                       }}
-                      onClick={() => markForDeletion(s.id)}
                     >
-                      ✕
+                      + Add note
                     </button>
+                  )}
+                </div>
+
+                {/* Status + actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexShrink: 0 }}>
+                  {isMarkedForDeletion ? (
+                    <>
+                      <span style={{ fontSize: '12px', color: '#888' }}>{s.status}</span>
+                      <button
+                        style={{ ...smallBtn, ...smallBtnSuccess, marginLeft: 0 }}
+                        onClick={() => unmarkForDeletion(s.id)}
+                      >
+                        Undo
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                        <StatusSelect value={s.status} onChange={v => changeStatus(s, v)} />
+                        {statusChanged && (
+                          <span style={{ fontSize: '10px', color: '#888' }}>
+                            was {pub.status}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        style={{ ...smallBtn, ...smallBtnDanger, marginLeft: 0, width: '30px', height: '30px', padding: 0 }}
+                        onClick={() => markForDeletion(s.id)}
+                        title="Delete"
+                        aria-label={`Delete ${s.name}`}
+                      >
+                        ✕
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

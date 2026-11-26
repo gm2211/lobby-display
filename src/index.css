@@ -114,17 +114,4 @@ body {
     flex-wrap: wrap !important;
     gap: 6px !important;
   }
-  /* Services editor: compact 2x2 card per service instead of stacking
-     all four cells vertically:  [name    | status ]
-                                 [notes   | delete ] */
-  .services-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(120px, 45%) !important;
-    align-items: center !important;
-  }
-  .services-grid-header {
-    display: none !important;
-  }
-  .services-grid > div {
-    padding: 4px 12px !important;
-  }
 }

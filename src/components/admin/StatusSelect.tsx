@@ -26,48 +26,81 @@
 import type { CSSProperties } from 'react';
 import { STATUS_COLORS } from '../../constants';
 
-/** Input style matching the admin light theme */
-const inputStyle: CSSProperties = {
-  background: '#fff',
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  borderColor: '#ddd',
-  borderRadius: '6px',
-  padding: '8px 12px',
-  color: '#333',
-  fontSize: '14px',
+/**
+ * Readable text / tint per status. STATUS_COLORS are the dashboard dot colors;
+ * amber and light green are too light for text on white, so text uses darker shades.
+ */
+const STATUS_TEXT: Record<string, string> = {
+  Operational: '#2e7d32',
+  Maintenance: '#8a5e00',
+  Outage: '#c62828',
 };
+
+/** Chevron drawn as an inline SVG so no native select arrow (or iOS chrome) shows */
+const CHEVRON = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
 
 interface StatusSelectProps {
   /** Current status value */
   value: string;
   /** Callback when user selects a new status */
   onChange: (value: string) => void;
-  /** Optional additional styles */
+  /** Optional additional styles for the wrapper */
   style?: CSSProperties;
 }
 
+/**
+ * Pill-shaped status picker: colored dot + status text on a light tint of the
+ * status color. Uses a native <select> underneath (keyboard + mobile pickers
+ * still work) with appearance reset so it looks the same on iOS and desktop.
+ */
 export function StatusSelect({ value, onChange, style }: StatusSelectProps) {
+  const dot = STATUS_COLORS[value as keyof typeof STATUS_COLORS] || '#999';
+  const text = STATUS_TEXT[value] || '#333';
   return (
-    <select
-      style={{
-        ...inputStyle,
-        color: STATUS_COLORS[value] || '#333',
-        fontWeight: 600,
-        ...style,
-      }}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-    >
-      <option value="Operational" style={{ color: STATUS_COLORS.Operational }}>
-        Operational
-      </option>
-      <option value="Maintenance" style={{ color: STATUS_COLORS.Maintenance }}>
-        Maintenance
-      </option>
-      <option value="Outage" style={{ color: STATUS_COLORS.Outage }}>
-        Outage
-      </option>
-    </select>
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', ...style }}>
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '11px',
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          background: dot,
+          pointerEvents: 'none',
+        }}
+      />
+      <select
+        aria-label="Status"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          MozAppearance: 'none',
+          width: '100%',
+          minWidth: '132px',
+          padding: '5px 28px 5px 26px',
+          borderRadius: '999px',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: `${dot}66`,
+          backgroundColor: `${dot}14`,
+          backgroundImage: CHEVRON,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 10px center',
+          color: text,
+          fontSize: '13px',
+          fontWeight: 600,
+          fontFamily: 'inherit',
+          lineHeight: 1.4,
+          cursor: 'pointer',
+        }}
+      >
+        <option value="Operational">Operational</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Outage">Outage</option>
+      </select>
+    </span>
   );
 }
