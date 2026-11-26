@@ -89,7 +89,7 @@ export function EventsSection({
     api.post('/api/events/reorder', { ids: updated.map(e => e.id) }).catch(() => onSave());
     onSave({ events: updated });
   };
-  const { items: orderedEvents, draggingId, rowRef, handleProps } = useDragReorder(events, saveOrder);
+  const { rowRef, rowStyle, handleProps } = useDragReorder(events, saveOrder);
 
   const markForDeletion = (id: number) => {
     const updated = events.map(e => e.id === id ? { ...e, markedForDeletion: true } : e);
@@ -261,7 +261,7 @@ export function EventsSection({
         </div>
       )}
       <div>
-        {orderedEvents.map(e => {
+        {events.map(e => {
           const pub = publishedEvents?.find(pe => pe.id === e.id);
           const isNewDraft = !pub;
           const isMarkedForDeletion = e.markedForDeletion;
@@ -280,13 +280,14 @@ export function EventsSection({
               ref={rowRef(e.id)}
               style={{
                 ...listCardStyle,
-                ...(draggingId === e.id
-                  ? { boxShadow: '0 6px 16px rgba(0,0,0,0.18)', background: '#fff', position: 'relative', zIndex: 1 }
-                  : {}),
+                // Narrow screens: action buttons wrap under the content instead of overflowing
+                flexWrap: 'wrap',
+                rowGap: '8px',
                 ...(isMarkedForDeletion
                   ? { ...markedForDeletionStyle, borderColor: 'rgba(244, 67, 54, 0.3)' }
                   : {}),
                 ...(hasChanges ? itemChangedStyle : {}),
+                ...rowStyle(e.id),
               }}
             >
               <div
@@ -294,14 +295,15 @@ export function EventsSection({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  flex: 1,
+                  flex: '1 1 240px',
+                  minWidth: 0,
                   ...(isMarkedForDeletion ? { textDecoration: 'line-through', opacity: 0.5 } : {}),
                 }}
               >
                 {events.length > 1 && (
                   <span
                     {...handleProps(e.id)}
-                    style={{ ...handleProps(e.id).style, color: '#aaa', fontSize: '18px', lineHeight: 1, padding: '4px 2px', flexShrink: 0, textDecoration: 'none' }}
+                    style={{ ...handleProps(e.id).style, color: '#aaa', fontSize: '18px', lineHeight: 1, padding: '10px 8px', margin: '-10px -4px -10px -8px', flexShrink: 0, textDecoration: 'none' }}
                   >
                     ⋮⋮
                   </span>
@@ -338,7 +340,7 @@ export function EventsSection({
                   </span>
                 </div>
               </div>
-              <span style={{ display: 'flex', gap: '4px' }}>
+              <span style={{ display: 'flex', gap: '4px', marginLeft: 'auto', flexShrink: 0 }}>
                 {isMarkedForDeletion ? (
                   <button
                     style={{ ...smallBtn, ...smallBtnSuccess }}
