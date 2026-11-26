@@ -257,30 +257,30 @@ pages:
             selector: "textarea"
 
       - id: admin-edit-event
-        description: "Opens inline edit form for an existing event"
+        description: "Edit opens the event form in place, inside that event's card"
         steps:
           - action: click
-            selector: "button[title='Edit']"
+            selector: "[data-testid='event-card'] button >> text='Edit'"
           - action: assert_visible
-            selector: "input[placeholder='Title']"
+            selector: "[data-testid='event-card'] input[placeholder='Title']"
 
       - id: admin-clone-event
-        description: "Clone button exists for each event"
+        description: "Each event card's action bar has a Copy button"
         steps:
           - action: assert_visible
-            selector: "button[title='Clone']"
+            selector: "[data-testid='event-card'] button >> text='Copy'"
 
       - id: admin-delete-event
-        description: "Delete button exists for each event"
+        description: "Each event card's action bar has a Delete button"
         steps:
           - action: assert_visible
-            selector: "button[title='Delete']"
+            selector: "[data-testid='event-card'] button >> text='Delete'"
 
       - id: admin-event-preview
-        description: "Preview button exists for individual events"
+        description: "Each event card's action bar has a Preview button"
         steps:
           - action: assert_visible
-            selector: "button >> text='Preview'"
+            selector: "[data-testid='event-card'] button >> text='Preview'"
 
       - id: admin-add-advisory
         description: "Adds a new advisory with a message input"
@@ -693,6 +693,22 @@ requirements:
       1. Log in as a VIEWER. 2. Inspect the connect.sid cookie: it expires about one
       year from now.
     evidence_format: "Cookie expiry from the login response."
+
+  - id: req-events-editor-cards
+    description: >
+      The admin Events list is a single column of cards at every screen width (phone, iPad,
+      desktop), so the order is easy to read. Each card shows a drag handle, the title,
+      the subtitle clamped to two lines, status chips (New when the lobby shows the NEW
+      badge, Draft when never published, Edited when changed since the last publish,
+      Removing when marked for deletion), and a full-width action bar with labelled
+      Edit, Preview, Copy and Delete buttons. A card marked for deletion shows a single
+      "Undo remove" button. Edit opens the form inside that card; Copy opens it at the top.
+    verification: agent
+    validation_plan: >
+      1. Open admin at 390px, 820px and 1280px wide. 2. The events are in one column with
+      the four labelled buttons under each card and no horizontal scroll. 3. Edit an
+      event: the form opens in its card. 4. Delete an event: its bar shows "Undo remove".
+    evidence_format: "Screenshots of the Events section at the three widths."
 
   - id: req-uploaded-images-display
     description: >

@@ -82,12 +82,10 @@ test.describe('Admin - Events Section', () => {
     await page.goto('/admin');
     await expect(page.locator(`text=${evt.title}`)).toBeVisible();
 
-    // Navigate from the title text up to the card (identified by border-radius from listCardStyle),
-    // then find the edit button within the card.
-    const titleEl = page.getByText(evt.title, { exact: true });
-    const card = titleEl.locator('xpath=ancestor::div[contains(@style, "border-radius")][1]');
-    const editBtn = card.locator('button:has-text("✎")');
-    await editBtn.click();
+    // Each event is a card (data-testid="event-card") with an Edit · Preview · Copy · Delete bar.
+    // Edit opens the form in place, inside the card.
+    const card = page.getByTestId('event-card').filter({ hasText: evt.title });
+    await card.getByRole('button', { name: 'Edit' }).click();
 
     // The form should now be in edit mode with "Save Draft" button
     await expect(page.getByRole('button', { name: 'Save Draft' })).toBeVisible();
@@ -122,14 +120,12 @@ test.describe('Admin - Events Section', () => {
     await page.goto('/admin');
     await expect(page.locator(`text=${evt.title}`)).toBeVisible();
 
-    // Find the delete (✕) button via the event card
-    const titleEl = page.getByText(evt.title, { exact: true });
-    const card = titleEl.locator('xpath=ancestor::div[contains(@style, "border-radius")][1]');
-    const deleteBtn = card.locator('button:has-text("✕")');
-    await deleteBtn.click();
+    // Find the Delete button in the event card's action bar
+    const card = page.getByTestId('event-card').filter({ hasText: evt.title });
+    await card.getByRole('button', { name: 'Delete' }).click();
 
-    // After marking for deletion, an "Undo" button should appear in the card
-    await expect(card.locator('button:has-text("Undo")')).toBeVisible();
+    // After marking for deletion, the bar becomes a single "Undo remove" button
+    await expect(card.getByRole('button', { name: 'Undo remove' })).toBeVisible();
   });
 
   test('Details array is preserved through edit cycle', async ({ page }) => {
@@ -145,13 +141,11 @@ test.describe('Admin - Events Section', () => {
     await expect(page.locator(`text=${evt.title}`)).toBeVisible();
 
     // Verify the detail count shows in the card
-    const detailsTitleEl = page.getByText(evt.title, { exact: true });
-    const detailsCard = detailsTitleEl.locator('xpath=ancestor::div[contains(@style, "border-radius")][1]');
+    const detailsCard = page.getByTestId('event-card').filter({ hasText: evt.title });
     await expect(detailsCard.locator('text=3 details')).toBeVisible();
 
-    // Open the edit form via the pencil button
-    const detailsEditBtn = detailsCard.locator('button:has-text("✎")');
-    await detailsEditBtn.click();
+    // Open the edit form (in place, inside the card)
+    await detailsCard.getByRole('button', { name: 'Edit' }).click();
 
     // Save without changing details
     await page.getByRole('button', { name: 'Save Draft' }).click();

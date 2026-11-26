@@ -30,6 +30,20 @@ Reference guide for common patterns in this codebase. **Read this when implement
 2. Export from `src/components/admin/sections/index.ts`
 3. Add to `src/pages/Admin.tsx`
 
+### List editors: cards with an action bar
+
+Admin lists (Events, Services) use the shared styles in `src/styles/editorCard.ts` and the
+icons in `src/components/admin/EditorIcons.tsx`:
+
+- One column at every width (phone, iPad, desktop) so the order is easy to read.
+- Card top: drag handle (`editorCardHandleStyle`), title, text clamped to 2 lines, and a meta
+  row with status chips (`chipNewStyle` / `chipDraftStyle` / `chipEditedStyle` / `chipRemovingStyle`).
+- Card bottom: `actionBarStyle(n)` with labelled `actionBarButtonStyle` buttons (icon + text,
+  44px tall). First button gets `actionBarButtonFirstStyle`. A card marked for deletion shows a
+  single `actionBarUndoStyle` "Undo remove" button.
+- Editing an existing item opens its form inside the card (`EventsSection` `renderForm(true)`);
+  adding or copying opens the form at the top of the section.
+
 ### Optimistic writes (keep the admin snappy)
 
 For edits whose result you can predict (delete, undo, status, notes, settings), fire the
