@@ -122,6 +122,10 @@ export default function Dashboard() {
       <style>{`
         html, body { overflow: hidden; height: 100%; background: #fff; }
         #root { height: 100%; }
+        /* 100vh is taller than the visible area on phones (Safari's toolbars cover the
+           bottom, hiding the advisory ticker). dvh tracks the visible height; older
+           browsers ignore it and keep 100vh, so the lobby screen is unaffected. */
+        .dashboard-page { height: 100vh; height: 100dvh; }
       `}</style>
     </div>
   );
@@ -129,7 +133,7 @@ export default function Dashboard() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
-    height: '100vh',
+    // height lives in the <style> block above (100vh with a 100dvh override)
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
