@@ -36,17 +36,22 @@ The admin page is tabs, not one long scroll (`src/pages/Admin.tsx` + `src/pages/
 
 | Width | Tabs | Extras |
 |-------|------|--------|
-| < 768px (iPhone) | Bar **fixed** to the bottom: Services, Events, Advisories, Settings (Appearance folds into Settings) | ⋯ menu holds Review changes, Preview, History, Discard, Metrics, Log out. "‹ Dashboard" is always visible in the header |
-| 768-1199 (iPad) | Row along the bottom of the sticky header, Appearance gets its own tab | ⋯ menu has Review changes |
+| < 768px (iPhone) | Bar along the bottom: Services, Events, Advisories, Settings (Appearance folds into Settings) | ⋯ menu holds Review changes, Preview, History, Discard, Metrics, Log out. "‹ Dashboard" is always visible in the header |
+| 768-1199 (iPad) | Row along the bottom of the header, Appearance gets its own tab | ⋯ menu has Review changes |
 | >= 1200 (desktop) | Same as iPad | "Not yet on the lobby" side panel (`ChangesPanel`) |
 
-- The window is the only scroller. Don't give the page an inner `overflow: auto` container: iOS Safari's
-  toolbars stop collapsing and fixed/sticky bars misbehave.
+- **The page never scrolls.** `.admin-shell` is one screen tall (`100dvh`, `overflow: hidden`, html/body
+  locked too). Header and iPhone tab bar are flex items that never move. Only the tab content
+  (`.admin-scroll`) and the desktop side panel (`.admin-aside`) scroll, and only when their content
+  doesn't fit. Nested lists may scroll inside those. Don't make the window scroll again or use
+  `position: fixed/sticky` for the bars.
 - Every section stays mounted; inactive tabs are `hidden`, so open edit forms survive a tab switch.
-  Each tab remembers its own `scrollY`; tapping the active tab scrolls to top. The tab is in the URL hash (`/admin#events`).
-- On iPhone the content's bottom padding is tab bar + `env(safe-area-inset-bottom)` (0 in Safari).
+  Each tab remembers its own `.admin-scroll` `scrollTop`; tapping the active tab scrolls to top. The tab is in the URL hash (`/admin#events`).
+- Code that scrolls during a drag (`useDragReorder`) scrolls the nearest scrolling ancestor, not the window.
+- iPhone tab bar has `padding-bottom: env(safe-area-inset-bottom)` (0 in Safari without viewport-fit).
   **Don't** add `viewport-fit=cover`: iPad/iPhone Safari then draws content behind its floating
-  toolbar above the sticky header. Admin sets `<meta name="theme-color">` to the header color instead.
+  toolbar above the header. Admin sets `<meta name="theme-color">` to the header color instead.
+  Tradeoff: with no window scroll, Safari's toolbars don't collapse on admin; `100dvh` sizes the shell to them.
 - Tab badges and the changes panel come from `computeDraftChanges()` (`src/utils/draftChanges.ts`),
   a client-side diff of draft vs. `draft-status.published`. Undo: removing → `/unmark`, edited →
   `restore-items` from the latest version, added → `DELETE`. A section flagged changed with nothing listed shows a dot.
@@ -72,7 +77,7 @@ icons in `src/components/admin/EditorIcons.tsx`:
 
 `src/components/admin/SnapshotHistory.tsx` (+ `.css`), opened from the header's History button (⋯ menu on iPhone). It is a full-screen layer over the editor, not a tab:
 
-- **Header + scrubber** (◀ vN ▶ and a slider with one dot per publish, green dot = live) and the **tray** (Back to live · Restore vN) never move. Only `.tm-scroll` scrolls. This is the one inner scroller in admin, allowed because it is an overlay; the editor underneath keeps its window scroll and mounted tabs, and body scroll is locked while History is open.
+- **Header + scrubber** (◀ vN ▶ and a slider with one dot per publish, green dot = live) and the **tray** (Back to live · Restore vN) never move. Only `.tm-scroll` scrolls, the same app-shell rule as the editor (the page never scrolls).
 - Opens on the version **before** live. ← / → step older / newer, Esc closes.
 - The lobby preview is the real dashboard (`/?snapshot=N`) in an iframe rendered at 1280×720 and scaled to fit, with an "Open full size" link.
 - "Different from now" comes from `GET /api/snapshots/:v/diff/draft` ("now" = the draft, so a fixed row disappears at once). `buildRows()` maps it to rows: **Only then** → Use this (`restore-items`), **Different** → Use this, **Not then** → Remove (soft delete, shows as Removing in the editor), **Removing** → Keep (`/:id/unmark`). Settings rows have no per-item action; they come back with Restore vN.

@@ -63,6 +63,16 @@ interface DragState {
   dropping: boolean;
 }
 
+/** Nearest ancestor that scrolls vertically (admin tabs scroll inside a pane, not the window). */
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let n = el?.parentElement ?? null; n; n = n.parentElement) {
+    const oy = getComputedStyle(n).overflowY;
+    if (oy === 'auto' || oy === 'scroll') return n;
+  }
+  return null;
+}
+const scrollTopOf = (s: HTMLElement | null) => (s ? s.scrollTop : window.scrollY);
+
 function prefersReducedMotion() {
   return typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
@@ -77,6 +87,7 @@ export function useDragReorder<T extends { id: number }>(
   const slots = useRef<Slot[]>([]);
   const start = useRef({ clientY: 0, scrollY: 0 });
   const lastClientY = useRef(0);
+  const scroller = useRef<HTMLElement | null>(null);
   const rows = useRef(new Map<number, HTMLElement>());
   const dropTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -121,7 +132,7 @@ export function useDragReorder<T extends { id: number }>(
     const d = dragRef.current;
     if (!d || d.dropping) return;
     lastClientY.current = clientY;
-    const dy = clientY - start.current.clientY + (window.scrollY - start.current.scrollY);
+    const dy = clientY - start.current.clientY + (scrollTopOf(scroller.current) - start.current.scrollY);
     update({ ...d, dy, to: computeTarget(d.from, dy) });
   };
 
@@ -189,11 +200,13 @@ export function useDragReorder<T extends { id: number }>(
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       e.preventDefault();
       e.currentTarget.setPointerCapture?.(e.pointerId);
+      scroller.current = scrollParent(e.currentTarget);
+      const scrollY = scrollTopOf(scroller.current);
       slots.current = source.map(item => {
         const r = rows.current.get(item.id)?.getBoundingClientRect();
-        return { id: item.id, top: (r?.top ?? 0) + window.scrollY, bottom: (r?.bottom ?? 0) + window.scrollY };
+        return { id: item.id, top: (r?.top ?? 0) + scrollY, bottom: (r?.bottom ?? 0) + scrollY };
       });
-      start.current = { clientY: e.clientY, scrollY: window.scrollY };
+      start.current = { clientY: e.clientY, scrollY };
       lastClientY.current = e.clientY;
       const from = source.findIndex(item => item.id === id);
       navigator.vibrate?.(10);
@@ -201,8 +214,11 @@ export function useDragReorder<T extends { id: number }>(
     },
     onPointerMove: (e: PointerEvent<HTMLElement>) => {
       if (dragRef.current?.id !== id) return;
-      if (e.clientY < EDGE_SCROLL_PX) window.scrollBy(0, -EDGE_SCROLL_STEP);
-      else if (e.clientY > window.innerHeight - EDGE_SCROLL_PX) window.scrollBy(0, EDGE_SCROLL_STEP);
+      const sc = scroller.current;
+      const edge = sc ? sc.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      const by = (dy: number) => (sc ? sc.scrollBy(0, dy) : window.scrollBy(0, dy));
+      if (e.clientY < edge.top + EDGE_SCROLL_PX) by(-EDGE_SCROLL_STEP);
+      else if (e.clientY > edge.bottom - EDGE_SCROLL_PX) by(EDGE_SCROLL_STEP);
       track(e.clientY);
     },
     onPointerUp: () => {
