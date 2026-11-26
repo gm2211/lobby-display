@@ -241,6 +241,7 @@ export function ServicesSection({
             return (
               <div
                 key={s.id}
+                data-testid="service-card"
                 style={{
                   ...editorCardStyle,
                   ...(hasItemChanges ? editorCardChangedStyle : {}),

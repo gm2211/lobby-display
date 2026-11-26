@@ -35,13 +35,9 @@ test.describe('Admin - Services Section', () => {
     await expect(page.locator('h2', { hasText: 'Services' })).toBeVisible();
 
     // The service we just created should appear in the services table
-    await expect(page.locator(`text=${uniqueName}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${uniqueName}`)).toBeVisible();
 
-    // Verify the table has header columns (Service, Status, Notes)
-    const header = page.locator('.services-grid').first();
-    await expect(header.locator('text=Service')).toBeVisible();
-    await expect(header.locator('text=Status')).toBeVisible();
-    await expect(header.locator('text=Notes')).toBeVisible();
+    // Services are cards now (no table header row since the card redesign)
   });
 
   test('Can add a new service via the form', async ({ page }) => {
@@ -67,7 +63,7 @@ test.describe('Admin - Services Section', () => {
     await servicesSection.getByRole('button', { name: 'Add', exact: true }).click();
 
     // The new service should appear in the list
-    await expect(page.locator(`text=${serviceName}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${serviceName}`)).toBeVisible({ timeout: 10_000 });
 
     // Clean up: mark the newly created service for deletion via API
     // We need to find it in the API response
@@ -87,10 +83,10 @@ test.describe('Admin - Services Section', () => {
     });
 
     await page.goto('/admin');
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
 
     // Find the row containing our service and change its status via the inline dropdown
-    const serviceRow = page.locator('.services-grid').filter({ hasText: svc.name });
+    const serviceRow = page.getByTestId('service-card').filter({ hasText: svc.name });
     const statusSelect = serviceRow.locator('select');
     await statusSelect.selectOption('Outage');
 
@@ -99,8 +95,8 @@ test.describe('Admin - Services Section', () => {
 
     // Verify the status changed - reload the page and check
     await page.reload();
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
-    const updatedRow = page.locator('.services-grid').filter({ hasText: svc.name });
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
+    const updatedRow = page.getByTestId('service-card').filter({ hasText: svc.name });
     await expect(updatedRow.locator('select')).toHaveValue('Outage');
   });
 
@@ -112,15 +108,15 @@ test.describe('Admin - Services Section', () => {
     });
 
     await page.goto('/admin');
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
 
     // Find the row and click the delete button (X)
-    const serviceRow = page.locator('.services-grid').filter({ hasText: svc.name });
-    await serviceRow.locator('button', { hasText: /^.$/ }).click();
+    const serviceRow = page.getByTestId('service-card').filter({ hasText: svc.name });
+    await serviceRow.getByRole('button', { name: /delete/i }).click();
 
     // After marking for deletion, the service name should have line-through styling
     // and an "Undo" button should appear
-    await expect(serviceRow.getByRole('button', { name: 'Undo' })).toBeVisible();
+    await expect(serviceRow.getByRole('button', { name: /undo/i })).toBeVisible();
 
     // The text should show with line-through (indicated by textDecoration style)
     const nameCell = serviceRow.locator('span', { hasText: svc.name });
@@ -136,22 +132,22 @@ test.describe('Admin - Services Section', () => {
     await api.delete(`/api/services/${svc.id}`);
 
     await page.goto('/admin');
-    await expect(page.locator(`text=${svc.name}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${svc.name}`)).toBeVisible();
 
     // Find the row - it should show the "Undo" button since it's marked for deletion
-    const serviceRow = page.locator('.services-grid').filter({ hasText: svc.name });
-    await expect(serviceRow.getByRole('button', { name: 'Undo' })).toBeVisible();
+    const serviceRow = page.getByTestId('service-card').filter({ hasText: svc.name });
+    await expect(serviceRow.getByRole('button', { name: /undo/i })).toBeVisible();
 
     // Click Undo to unmark — wait for the POST /unmark response to complete
     const undoPromise = page.waitForResponse(
       (response) => response.url().includes('/unmark') && response.request().method() === 'POST',
       { timeout: 10_000 },
     );
-    await serviceRow.getByRole('button', { name: 'Undo' }).click();
+    await serviceRow.getByRole('button', { name: /undo/i }).click();
     await undoPromise;
 
     // After unmarking, the Undo button should disappear and the delete button should reappear
-    await expect(serviceRow.getByRole('button', { name: 'Undo' })).not.toBeVisible({
+    await expect(serviceRow.getByRole('button', { name: /undo/i })).not.toBeVisible({
       timeout: 5000,
     });
 

@@ -102,16 +102,4 @@ body {
     padding: 10px 12px !important;
   }
 
-  /* Admin mobile overrides */
-  .admin-page {
-    padding: 12px !important;
-  }
-  .admin-header {
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-  }
-  .admin-header-buttons {
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-  }
 }

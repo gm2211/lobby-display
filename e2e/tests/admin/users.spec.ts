@@ -30,7 +30,7 @@ test.describe('Admin - Users Section', () => {
   });
 
   test('ADMIN can see the user list section', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/admin#settings');
 
     // The Users section should be visible with its heading
     await expect(page.locator('h2', { hasText: 'Users' })).toBeVisible();
@@ -60,7 +60,7 @@ test.describe('Admin - Users Section', () => {
     const user = await res.json();
     createdUserIds.push(user.id);
 
-    await page.goto('/admin');
+    await page.goto('/admin#settings');
 
     // Scroll down to the Users section
     await page.locator('h2', { hasText: 'Users' }).scrollIntoViewIfNeeded();
@@ -115,9 +115,12 @@ test.describe('Admin - Users Section', () => {
       await editorPage.waitForTimeout(2000);
 
       // Check that other sections exist (Services, Events, Advisories are visible)
-      await expect(editorPage.locator('h2', { hasText: 'Services' })).toBeVisible();
-      await expect(editorPage.locator('h2', { hasText: 'Events' })).toBeVisible();
-      await expect(editorPage.locator('h2', { hasText: 'Advisories' })).toBeVisible();
+      // (each lives on its own tab)
+      for (const name of ['Services', 'Events', 'Advisories']) {
+        await editorPage.locator('nav[aria-label="Editor sections"] button', { hasText: name }).click();
+        await expect(editorPage.locator('h2', { hasText: name })).toBeVisible();
+      }
+      await editorPage.locator('nav[aria-label="Editor sections"] button', { hasText: 'Settings' }).click();
 
       // The Users section should not be present for an editor
       // UsersSection checks currentUser role and hides for non-admin users

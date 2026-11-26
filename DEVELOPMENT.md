@@ -28,7 +28,28 @@ Reference guide for common patterns in this codebase. **Read this when implement
    ```
 
 2. Export from `src/components/admin/sections/index.ts`
-3. Add to `src/pages/Admin.tsx`
+3. Add to `src/pages/Admin.tsx` inside the tab it belongs to (see below)
+
+### Admin layout: tabs
+
+The admin page is tabs, not one long scroll (`src/pages/Admin.tsx` + `src/pages/Admin.css`):
+
+| Width | Tabs | Extras |
+|-------|------|--------|
+| < 768px (iPhone) | Bar **fixed** to the bottom: Services, Events, Advisories, Settings (Appearance folds into Settings) | ⋯ menu holds Review changes, Preview, History, Discard, Metrics, Dashboard, Log out |
+| 768-1199 (iPad) | Row along the bottom of the sticky header, Appearance gets its own tab | ⋯ menu has Review changes |
+| >= 1200 (desktop) | Same as iPad | "Not yet on the lobby" side panel (`ChangesPanel`) |
+
+- The window is the only scroller. Don't give the page an inner `overflow: auto` container: iOS Safari's
+  toolbars stop collapsing and fixed/sticky bars misbehave.
+- Every section stays mounted; inactive tabs are `hidden`, so open edit forms survive a tab switch.
+  Each tab remembers its own `scrollY`; tapping the active tab scrolls to top. The tab is in the URL hash (`/admin#events`).
+- On iPhone the content's bottom padding is tab bar + `env(safe-area-inset-bottom)`. Admin adds
+  `viewport-fit=cover` to the viewport meta on mount (and removes it on unmount) so the inset is real
+  in home-screen mode; the lobby dashboard is unaffected.
+- Tab badges and the changes panel come from `computeDraftChanges()` (`src/utils/draftChanges.ts`),
+  a client-side diff of draft vs. `draft-status.published`. Undo: removing → `/unmark`, edited →
+  `restore-items` from the latest version, added → `DELETE`. A section flagged changed with nothing listed shows a dot.
 
 ### List editors: cards with an action bar
 

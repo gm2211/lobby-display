@@ -59,15 +59,16 @@ server/
 src/
   pages/
     Dashboard.tsx     # Lobby display (auto-scroll, real-time)
-    Admin.tsx         # Content management UI
+    Admin.tsx         # Content management UI: tabs (bottom bar on iPhone, top on iPad/desktop) + changes panel
+    Admin.css         # Admin layout: sticky header, fixed iPhone tab bar, desktop side panel
     Login.tsx         # Authentication page
   components/         # Header, ServiceTable, EventCard, AdvisoryTicker, AutoScrollCards, ProtectedRoute
-  components/admin/   # Section editors, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider, useDragReorder
+  components/admin/   # Section editors, AdminTabs, ChangesPanel, ImagePicker, MarkdownEditor, SnapshotHistory, SpeedSlider, useDragReorder
   constants/          # Shared constants (colors, defaults, status presets)
   contexts/           # AuthContext (session state)
   styles/             # Shared style objects (editorCard.ts: admin list cards + action bars)
   types.ts            # TypeScript interfaces
-  utils/              # API client, markdown parser, timeAgo
+  utils/              # API client, markdown parser, timeAgo, draftChanges (unpublished-change list), useMediaQuery
 prisma/
   schema.prisma       # Data models (Service, Event, Advisory, BuildingConfig, etc.)
 tests/

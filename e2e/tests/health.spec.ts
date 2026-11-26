@@ -40,6 +40,6 @@ test.describe('Smoke / Health checks', () => {
     // The heading should contain "Admin" (use the h1 in the admin-header)
     await expect(page.locator('.admin-header h1')).toBeVisible();
     // Should have the Publish button
-    await expect(page.getByRole('button', { name: /publish/i })).toBeVisible();
+    await expect(page.getByRole('banner').getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
   });
 });

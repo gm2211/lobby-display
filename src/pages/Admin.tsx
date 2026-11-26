@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Service, Event, Advisory, BuildingConfig } from '../types';
 import { api, mutations } from '../utils/api';
-import { smallBtn, headerBtn, headerBtnSecondary, modalOverlay, modal } from '../styles';
+import { smallBtn, modalOverlay, modal } from '../styles';
 import {
   SnapshotHistory,
   ConfigSection,
@@ -15,6 +15,17 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import { RuntimeThemeOverride } from '../theme/RuntimeThemeOverride';
+import { AdminTabs, type AdminTab, type TabBadge } from '../components/admin/AdminTabs';
+import { ChangesPanel } from '../components/admin/ChangesPanel';
+import { computeDraftChanges, countBySection } from '../utils/draftChanges';
+import { useMediaQuery } from '../utils/useMediaQuery';
+import './Admin.css';
+
+const ADMIN_TABS: AdminTab[] = ['services', 'events', 'advisories', 'appearance', 'settings'];
+function readTabFromHash(): AdminTab {
+  const h = window.location.hash.replace('#', '') as AdminTab;
+  return ADMIN_TABS.includes(h) ? h : 'services';
+}
 
 type SectionChanges = {
   config: boolean;
@@ -43,6 +54,7 @@ export default function Admin() {
   const [published, setPublished] = useState<PublishedData>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -131,7 +143,7 @@ export default function Admin() {
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (previewOpen || historyOpen) {
+    if (previewOpen || historyOpen || reviewOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -139,7 +151,7 @@ export default function Admin() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [previewOpen, historyOpen]);
+  }, [previewOpen, historyOpen, reviewOpen]);
 
   const publish = async () => {
     try {
@@ -173,81 +185,176 @@ export default function Admin() {
     }
   };
 
-  const pendingBgStyle: React.CSSProperties = hasChanges ? {
-    boxShadow: 'inset 0 0 40px 10px rgba(200, 130, 0, 0.12)',
-  } : {};
+  // ---- Layout: tabs (see src/pages/Admin.css) ----
+  const isPhone = useMediaQuery('(max-width: 767px)');
+  const isWide = useMediaQuery('(min-width: 1200px)');
+  const [tab, setTabState] = useState<AdminTab>(() => readTabFromHash());
+  // On iPhone, Appearance is folded into Settings
+  const shownTab: AdminTab = isPhone && tab === 'appearance' ? 'settings' : tab;
+  const tabs: AdminTab[] = isPhone
+    ? ['services', 'events', 'advisories', 'settings']
+    : ['services', 'events', 'advisories', 'appearance', 'settings'];
+
+  // Each tab keeps its own scroll position; tapping the active tab scrolls to top
+  const scrollByTab = useRef<Partial<Record<AdminTab, number>>>({});
+  const pendingScroll = useRef<number | null>(null);
+  const selectTab = useCallback((next: AdminTab) => {
+    if (next === shownTab) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    scrollByTab.current[shownTab] = window.scrollY;
+    pendingScroll.current = scrollByTab.current[next] ?? 0;
+    setTabState(next);
+    try { history.replaceState(null, '', `#${next}`); } catch { /* ignore */ }
+  }, [shownTab]);
+  useLayoutEffect(() => {
+    if (pendingScroll.current === null) return;
+    window.scrollTo(0, pendingScroll.current);
+    pendingScroll.current = null;
+  }, [shownTab]);
+  useEffect(() => {
+    const onHash = () => setTabState(readTabFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // Let the page draw under the iPhone home indicator; the tab bar pads itself
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    if (!meta) return;
+    const original = meta.content;
+    if (!/viewport-fit/.test(original)) meta.content = `${original}, viewport-fit=cover`;
+    return () => { meta.content = original; };
+  }, []);
+
+  // Sticky things below the header need its height
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerH, setHeaderH] = useState(64);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setHeaderH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { if (isWide) setReviewOpen(false); }, [isWide]);
+
+  const changes = useMemo(
+    () => computeDraftChanges({ services, events, advisories, config }, published),
+    [services, events, advisories, config, published],
+  );
+  const counts = countBySection(changes);
+  const badges: Partial<Record<AdminTab, TabBadge>> = {
+    services: { count: counts.services, changed: sectionChanges.services },
+    events: { count: counts.events, changed: sectionChanges.events },
+    advisories: { count: counts.advisories, changed: sectionChanges.advisories },
+    ...(isPhone
+      ? { settings: { count: counts.config, changed: sectionChanges.config } }
+      : { settings: { count: 0, changed: sectionChanges.config } }),
+  };
+
+  const show = (t: AdminTab) => (shownTab === t ? undefined : true);
+  const changesPanel = (
+    <ChangesPanel
+      changes={changes}
+      hasChanges={hasChanges}
+      publishedKey={published}
+      onChanged={() => onSave()}
+      onPreview={() => { setReviewOpen(false); setPreviewOpen(true); }}
+      onPublish={() => { setReviewOpen(false); publish(); }}
+      onDiscard={() => { setReviewOpen(false); discard(); }}
+    />
+  );
+  const runFromMenu = (fn: () => void) => () => { setMenuOpen(false); fn(); };
 
   return (
-    <div style={{ ...styles.pageWrap, ...pendingBgStyle }}>
+    <div className={`admin-shell${hasChanges ? ' has-changes' : ''}`} style={{ ['--admin-header-h' as string]: `${headerH}px` }}>
       <RuntimeThemeOverride config={published?.config || null} />
       {saveError && (
-        <div
-          role="alert"
-          onClick={() => setSaveError(null)}
-          style={{ position: 'fixed', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: '#b71c1c', color: '#fff', padding: '10px 16px', borderRadius: '6px', fontSize: '13px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', maxWidth: 'calc(100vw - 32px)', cursor: 'pointer' }}
-        >
-          {saveError}
-        </div>
+        <div role="alert" className="admin-toast" onClick={() => setSaveError(null)}>{saveError}</div>
       )}
-      <header className="admin-header" style={{ ...styles.header, background: 'linear-gradient(135deg, var(--theme-header-gradient-start) 0%, var(--theme-header-gradient-end) 100%)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {(published?.config?.logoUrl || theme.logoUrl) && (
-            <img src={published?.config?.logoUrl || theme.logoUrl} alt="" style={{ height: '36px', width: 'auto' }} />
-          )}
-          <div style={{ position: 'relative' }}>
-            <h1 style={{ margin: 0, color: '#fff', fontSize: `${config?.titleFontSize ?? 20}px`, fontWeight: 400, lineHeight: 1.3 }}>{config?.dashboardTitle || 'Building Updates'}</h1>
-            {hasChanges && <span style={{ color: 'var(--theme-color-secondary-300)', fontSize: '10px', position: 'absolute', bottom: '-14px', left: 0, whiteSpace: 'nowrap' }}>● Unpublished changes</span>}
+      <header ref={headerRef} className="admin-header">
+        <div className="admin-header-row">
+          <div className="admin-brand">
+            {(published?.config?.logoUrl || theme.logoUrl) && (
+              <img src={published?.config?.logoUrl || theme.logoUrl} alt="" />
+            )}
+            <div>
+              <h1>{config?.dashboardTitle || 'Building Updates'}</h1>
+              {hasChanges
+                ? <span className="admin-unpublished">● {changes.length ? `${changes.length} unpublished change${changes.length === 1 ? '' : 's'}` : 'Unpublished changes'}</span>
+                : <span className="admin-uptodate">Live on the lobby</span>}
+            </div>
+          </div>
+          <div className="admin-header-actions">
+            <button type="button" className="admin-hbtn admin-not-phone" disabled={!hasChanges} onClick={() => setPreviewOpen(true)}>Preview</button>
+            <button type="button" className="admin-hbtn admin-not-phone" onClick={() => setHistoryOpen(true)}>History</button>
+            <button type="button" className="admin-hbtn admin-not-phone" disabled={!hasChanges} onClick={discard}>Discard</button>
+            <button type="button" className="admin-hbtn admin-hbtn-primary" disabled={!hasChanges} onClick={publish}>Publish</button>
+            <div className="admin-menu-wrap">
+              <button type="button" className="admin-hbtn admin-hbtn-icon" aria-label="More" aria-expanded={menuOpen} onClick={() => setMenuOpen(o => !o)}>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="10" r="2" /><circle cx="10" cy="10" r="2" /><circle cx="16" cy="10" r="2" /></svg>
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="admin-menu-backdrop" onClick={() => setMenuOpen(false)} />
+                  <div className="admin-menu" role="menu">
+                    {!isWide && <button type="button" role="menuitem" onClick={runFromMenu(() => setReviewOpen(true))}>Review changes{changes.length ? ` (${changes.length})` : ''}</button>}
+                    {isPhone && <button type="button" role="menuitem" disabled={!hasChanges} onClick={runFromMenu(() => setPreviewOpen(true))}>Preview lobby</button>}
+                    {isPhone && <button type="button" role="menuitem" onClick={runFromMenu(() => setHistoryOpen(true))}>History</button>}
+                    {isPhone && <button type="button" role="menuitem" disabled={!hasChanges} onClick={runFromMenu(discard)}>Discard changes</button>}
+                    <a role="menuitem" href="/metrics">Metrics</a>
+                    <a role="menuitem" href="/">View dashboard</a>
+                    {user && <button type="button" role="menuitem" className="is-danger" onClick={runFromMenu(handleLogout)}>Log out {user.username}</button>}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
-        <div className="admin-header-buttons" style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center', flex: 2 }}>
-          <button
-            style={{
-              ...headerBtn,
-              ...(hasChanges ? {} : { opacity: 0.5, cursor: 'not-allowed' }),
-            }}
-            onClick={hasChanges ? publish : undefined}
-            disabled={!hasChanges}
-          >Publish</button>
-          <button
-            style={{
-              ...headerBtn,
-              ...headerBtnSecondary,
-              ...(hasChanges ? {} : { opacity: 0.5, cursor: 'not-allowed' }),
-            }}
-            onClick={hasChanges ? discard : undefined}
-            disabled={!hasChanges}
-          >Discard</button>
-          <button
-            style={{
-              ...headerBtn,
-              ...headerBtnSecondary,
-              ...(hasChanges ? {} : { opacity: 0.5, cursor: 'not-allowed' }),
-            }}
-            onClick={hasChanges ? () => setPreviewOpen(true) : undefined}
-            disabled={!hasChanges}
-          >Preview</button>
-          <button style={{ ...headerBtn, ...headerBtnSecondary }} onClick={() => setHistoryOpen(true)}>History</button>
-          <a href="/metrics" style={{ ...headerBtn, ...headerBtnSecondary, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>Metrics</a>
-          <a href="/" style={{ ...headerBtn, ...headerBtnSecondary, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>← Dashboard</a>
-        </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
-          {user && (
-            <>
-              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>{user.username}</span>
-              <button style={{ ...headerBtn, ...headerBtnSecondary, fontSize: '12px', padding: '4px 10px' }} onClick={handleLogout}>Logout</button>
-            </>
-          )}
-        </div>
+        {!isPhone && <AdminTabs variant="top" tabs={tabs} active={shownTab} badges={badges} onSelect={selectTab} />}
       </header>
 
-      <div className="admin-page" style={styles.page}>
-        <ConfigSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
-        <AppearanceSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
-        <ServicesSection services={services} config={config} onSave={onSave} hasChanged={sectionChanges.services} publishedServices={published?.services || null} />
-        <EventsSection events={events} config={config} onSave={onSave} hasChanged={sectionChanges.events} publishedEvents={published?.events || null} />
-        <AdvisoriesSection advisories={advisories} config={config} onSave={onSave} hasChanged={sectionChanges.advisories} publishedAdvisories={published?.advisories || null} />
-        <UsersSection />
+      <div className="admin-body">
+        <main className="admin-page">
+          <div hidden={show('services')}>
+            <ServicesSection services={services} config={config} onSave={onSave} hasChanged={sectionChanges.services} publishedServices={published?.services || null} />
+          </div>
+          <div hidden={show('events')}>
+            <EventsSection events={events} config={config} onSave={onSave} hasChanged={sectionChanges.events} publishedEvents={published?.events || null} />
+          </div>
+          <div hidden={show('advisories')}>
+            <AdvisoriesSection advisories={advisories} config={config} onSave={onSave} hasChanged={sectionChanges.advisories} publishedAdvisories={published?.advisories || null} />
+          </div>
+          <div hidden={show('settings')}>
+            <ConfigSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
+          </div>
+          <div hidden={isPhone ? show('settings') : show('appearance')}>
+            <AppearanceSection config={config} onSave={onSave} hasChanged={sectionChanges.config} publishedConfig={published?.config || null} />
+          </div>
+          <div hidden={show('settings')}>
+            <UsersSection />
+          </div>
+          <footer className="admin-footer">
+            Brought to you by <a href="https://github.com/gm2211" target="_blank" rel="noopener noreferrer">gm2211</a>
+          </footer>
+        </main>
+        {isWide && <aside className="admin-aside">{changesPanel}</aside>}
       </div>
+
+      {isPhone && <AdminTabs variant="bottom" tabs={tabs} active={shownTab} badges={badges} onSelect={selectTab} />}
+
+      {reviewOpen && (
+        <div style={modalOverlay} onClick={() => setReviewOpen(false)}>
+          <div className="admin-review-sheet" onClick={e => e.stopPropagation()}>
+            <button type="button" className="admin-review-close" onClick={() => setReviewOpen(false)}>Close</button>
+            {changesPanel}
+          </div>
+        </div>
+      )}
 
       {previewOpen && (
         <div style={modalOverlay} onClick={() => setPreviewOpen(false)}>
@@ -273,12 +380,8 @@ export default function Admin() {
         </div>
       )}
 
-      <footer style={{ textAlign: 'center', padding: '24px 0 12px', fontSize: '11px', color: '#555' }}>
-        Brought to you by <a href="https://github.com/gm2211" style={{ color: '#666' }} target="_blank" rel="noopener noreferrer">gm2211</a>
-      </footer>
 
       <style>{`
-        html, body { background: #f5f7fa; }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
           opacity: 1;
@@ -300,21 +403,3 @@ export default function Admin() {
     </div>
   );
 }
-
-// All section components moved to ../components/admin/sections/
-
-/**
- * Page-level styles for Admin component.
- * Section-specific styles are now in their respective section components.
- */
-const styles: Record<string, React.CSSProperties> = {
-  pageWrap: { background: '#f5f7fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  page: { maxWidth: '960px', width: '100%', margin: '0 auto', padding: '28px 24px', color: '#333', fontFamily: 'var(--theme-font-family)', boxSizing: 'border-box', flex: 1 },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '14px 28px',
-    // gradient set inline from theme.colors
-  },
-};

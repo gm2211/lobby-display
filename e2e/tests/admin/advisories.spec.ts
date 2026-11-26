@@ -31,18 +31,18 @@ test.describe('Admin - Advisories Section', () => {
       active: true,
     });
 
-    await page.goto('/admin');
+    await page.goto('/admin#advisories');
     await expect(page.locator('h2', { hasText: 'Advisories' })).toBeVisible();
 
     // The advisory should appear in the advisories list
-    await expect(page.locator(`text=${uniqueMsg}`)).toBeVisible();
+    await expect(page.getByRole('main').locator(`text=${uniqueMsg}`)).toBeVisible();
 
     // Verify the list header shows "Current Advisories"
     await expect(page.locator('text=Current Advisories')).toBeVisible();
   });
 
   test('Can add advisory with message', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/admin#advisories');
 
     // Click the "+ Add New Advisory" button
     await page.getByRole('button', { name: '+ Add New Advisory' }).click();
@@ -55,7 +55,7 @@ test.describe('Admin - Advisories Section', () => {
     await page.getByRole('button', { name: 'Add Advisory to Draft' }).click();
 
     // The new advisory should appear in the list
-    await expect(page.locator(`text=${message}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${message}`)).toBeVisible({ timeout: 10_000 });
 
     // Clean up via API
     const res = await api.get('/api/advisories');
@@ -73,8 +73,8 @@ test.describe('Admin - Advisories Section', () => {
       active: false,
     });
 
-    await page.goto('/admin');
-    await expect(page.locator(`text=${adv.message}`)).toBeVisible();
+    await page.goto('/admin#advisories');
+    await expect(page.getByRole('main').locator(`text=${adv.message}`)).toBeVisible();
 
     // Navigate from the message text up to the card (identified by border-radius from listCardStyle),
     // then find buttons within the card.
@@ -109,7 +109,7 @@ test.describe('Admin - Advisories Section', () => {
     await savePromise;
 
     // The edited message should appear
-    await expect(page.locator(`text=${editedMessage}`)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('main').locator(`text=${editedMessage}`)).toBeVisible({ timeout: 10_000 });
 
     // Verify via API that the advisory is now active and has the new message
     const res = await api.get('/api/advisories');
@@ -127,8 +127,8 @@ test.describe('Admin - Advisories Section', () => {
       active: true,
     });
 
-    await page.goto('/admin');
-    await expect(page.locator(`text=${adv.message}`)).toBeVisible();
+    await page.goto('/admin#advisories');
+    await expect(page.getByRole('main').locator(`text=${adv.message}`)).toBeVisible();
 
     // Find the delete (✕) button via the advisory card
     const msgEl = page.getByText(adv.message, { exact: true });
@@ -151,8 +151,8 @@ test.describe('Admin - Advisories Section', () => {
     });
 
     // Verify it shows in admin
-    await page.goto('/admin');
-    await expect(page.locator(`text=${adv.message}`)).toBeVisible();
+    await page.goto('/admin#advisories');
+    await expect(page.getByRole('main').locator(`text=${adv.message}`)).toBeVisible();
 
     // The inactive advisory card should have reduced opacity (0.5)
     // This is set via inline style when active is false
