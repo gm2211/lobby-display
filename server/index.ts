@@ -9,14 +9,29 @@ import app from './app.js';
 import prisma from './db.js';
 import { DEFAULT_SPEEDS } from './constants.js';
 import { getThemeStyleBlock, getDashboardTitle } from './themeCSS.js';
+import { asyncHandler } from './middleware/errorHandler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+/**
+ * Put demo content into a brand-new database so the first screen isn't blank.
+ *
+ * Only runs when the database has never been used: nothing published and every content
+ * table empty. Checking services alone is not enough - a building that removes all its
+ * services would get the demo services, duplicate demo events and a second config row
+ * back on every restart.
+ */
 async function seedIfEmpty() {
-  const count = await prisma.service.count();
-  if (count > 0) return;
+  const [snapshots, services, events, advisories, configs] = await Promise.all([
+    prisma.publishedSnapshot.count(),
+    prisma.service.count(),
+    prisma.event.count(),
+    prisma.advisory.count(),
+    prisma.buildingConfig.count(),
+  ]);
+  if (snapshots + services + events + advisories + configs > 0) return;
 
   await prisma.service.createMany({
     data: [
@@ -85,7 +100,7 @@ async function seedSnapshot() {
     prisma.service.findMany({ orderBy: { sortOrder: 'asc' } }),
     prisma.event.findMany({ orderBy: { sortOrder: 'asc' } }),
     prisma.advisory.findMany(),
-    prisma.buildingConfig.findFirst(),
+    prisma.buildingConfig.findFirst({ orderBy: { id: 'asc' } }),
   ]);
 
   const data = {
@@ -178,7 +193,7 @@ async function start() {
     // Serve static assets but NOT index.html (we inject theme vars into it)
     app.use(express.static(distPath, { index: false }));
     // SPA catch-all with server-side theme injection (auth already checked above)
-    app.get('*', async (req, res) => {
+    app.get('*', asyncHandler(async (_req, res) => {
       const [themeStyle, title] = await Promise.all([
         getThemeStyleBlock(),
         getDashboardTitle(),
@@ -191,7 +206,7 @@ async function start() {
       let html = rawIndexHtml.replace('</head>', `${themeStyle}\n</head>`);
       html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapedTitle}</title>`);
       res.type('html').send(html);
-    });
+    }));
   } else {
     const { createServer } = await import('vite');
     const vite = await createServer({

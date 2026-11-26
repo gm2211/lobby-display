@@ -7,13 +7,11 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 } as unknown as typeof ResizeObserver;
 
-// Mock requestAnimationFrame / cancelAnimationFrame
-let rafId = 0;
-global.requestAnimationFrame = (cb: FrameRequestCallback) => {
-  rafId++;
-  setTimeout(() => cb(performance.now()), 0);
-  return rafId;
-};
+// Mock requestAnimationFrame / cancelAnimationFrame.
+// The id returned IS the timer id, so cancelAnimationFrame really cancels the callback
+// (otherwise a frame can fire after the test environment is torn down).
+global.requestAnimationFrame = (cb: FrameRequestCallback) =>
+  setTimeout(() => cb(performance.now()), 0) as unknown as number;
 global.cancelAnimationFrame = (id: number) => {
   clearTimeout(id);
 };

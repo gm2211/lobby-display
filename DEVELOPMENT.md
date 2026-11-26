@@ -141,7 +141,24 @@ router.post('/', asyncHandler(async (req, res) => {
 | `AuthenticationError` | 401 | `server/middleware/auth.ts` |
 | `AuthorizationError` | 403 | `server/middleware/auth.ts` |
 | `NotFoundError` | 404 | `server/middleware/errorHandler.ts` |
-| Unhandled | 500 | |
+| Prisma bad input (unknown field, wrong type) | 400 | mapped in `errorHandler` |
+| Prisma record not found (`P2025`) | 404 | mapped in `errorHandler` |
+| Prisma unique / foreign-key conflict (`P2002`, `P2003`) | 409 | mapped in `errorHandler` |
+| Unknown `/api/*` route | 404 (JSON) | `server/app.ts` |
+| Unhandled | 500, generic message | |
+
+Clients never see the raw message of a 5xx error (it can contain Prisma queries and
+schema details); the full error goes to the server log. If a user should read the
+reason, throw `ValidationError` or `NotFoundError` with a message written for them.
+
+### Validating input
+
+- `PUT /api/config` uses an allow-list (`FIELD_RULES` in `server/routes/config.ts`). Add a
+  rule when you add a `BuildingConfig` column.
+- Values that end up in server-rendered HTML/CSS (theme font and colors) must pass the
+  allow-lists in `shared/theme/safeCss.ts`.
+- Check `typeof` before handing request values to Prisma `where` clauses
+  (see `readCredentials` in `server/routes/auth.ts`).
 
 ## Auto-Scrolling (Dashboard.tsx)
 

@@ -51,9 +51,9 @@ server/
   index.ts            # Server entry point (seeding, startup)
   db.ts               # Prisma client
   sse.ts              # Server-sent events for real-time updates (global + named channels)
-  constants.ts        # Server-side defaults (scroll speeds)
+  constants.ts        # Server-side defaults (scroll speeds, session lifetimes, password length)
   routes/             # REST API endpoints (services, events, advisories, config, snapshots, auth, users)
-  middleware/         # errorHandler (400/404/500), auth (401/403, roles), csrf
+  middleware/         # errorHandler (400/404/409/500), auth (401/403, roles), csrf, sessionUser (re-checks the user each request)
   utils/              # CRUD route factory, storage abstraction, Prisma session store
 src/
   pages/
@@ -70,7 +70,7 @@ src/
 prisma/
   schema.prisma       # Data models (Service, Event, Advisory, BuildingConfig, etc.)
 tests/
-  api/                # API + DB integration tests
+  api/                # API + DB integration tests (security.test.ts = audit regression tests)
   component/          # React component tests (jsdom)
   unit/               # Pure unit tests (apiClient, markdown, timeAgo)
 scripts/              # Render build/start scripts, sync-prod-to-staging.ts (prod → staging data copy)

@@ -13,7 +13,7 @@ describe('Users API — RBAC enforcement', () => {
     it('POST /api/users returns 401', async () => {
       const res = await request(app)
         .post('/api/users')
-        .send({ username: 'newuser', password: 'pass123' });
+        .send({ username: 'newuser', password: 'pass12345' });
       expect(res.status).toBe(401);
     });
   });
@@ -29,7 +29,7 @@ describe('Users API — RBAC enforcement', () => {
       const agent = await authenticatedAgent('VIEWER');
       const res = await agent
         .post('/api/users')
-        .send({ username: 'newuser', password: 'pass123' });
+        .send({ username: 'newuser', password: 'pass12345' });
       expect(res.status).toBe(403);
     });
   });
@@ -45,7 +45,7 @@ describe('Users API — RBAC enforcement', () => {
       const agent = await authenticatedAgent('EDITOR');
       const res = await agent
         .post('/api/users')
-        .send({ username: 'newuser', password: 'pass123' });
+        .send({ username: 'newuser', password: 'pass12345' });
       expect(res.status).toBe(403);
     });
   });
@@ -62,7 +62,7 @@ describe('Users API — RBAC enforcement', () => {
       const agent = await authenticatedAgent();
       const res = await agent
         .post('/api/users')
-        .send({ username: 'neweditor', password: 'pass123', role: 'EDITOR' });
+        .send({ username: 'neweditor', password: 'pass12345', role: 'EDITOR' });
       expect(res.status).toBe(201);
       expect(res.body.username).toBe('neweditor');
       expect(res.body.role).toBe('EDITOR');
@@ -75,7 +75,7 @@ describe('Users API — RBAC enforcement', () => {
       // Create a user to edit
       const created = await agent
         .post('/api/users')
-        .send({ username: 'toedit', password: 'pass123', role: 'EDITOR' });
+        .send({ username: 'toedit', password: 'pass12345', role: 'EDITOR' });
       expect(created.status).toBe(201);
 
       const res = await agent
@@ -114,7 +114,7 @@ describe('Users API — RBAC enforcement', () => {
       // Create a user to delete
       const created = await agent
         .post('/api/users')
-        .send({ username: 'todelete', password: 'pass123', role: 'VIEWER' });
+        .send({ username: 'todelete', password: 'pass12345', role: 'VIEWER' });
       expect(created.status).toBe(201);
 
       const res = await agent.delete(`/api/users/${created.body.id}`);

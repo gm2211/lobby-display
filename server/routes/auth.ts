@@ -4,69 +4,134 @@ import { asyncHandler, ValidationError } from '../middleware/errorHandler.js';
 import { AuthenticationError } from '../middleware/auth.js';
 import { ensureCsrfToken, rotateCsrfToken } from '../middleware/csrf.js';
 import prisma from '../db.js';
+import type { Role } from '@prisma/client';
+import { passwordVersion } from '../middleware/sessionUser.js';
+import { SESSION_AGES, MIN_PASSWORD_LENGTH } from '../constants.js';
 
 const router = Router();
 
 // --- Simple in-memory rate limiter for login ---
-const MAX_ATTEMPTS = 5;
+// Two independent counters of FAILED logins, each over a 15 minute window:
+//   - per client IP   (5)  - stops one machine guessing across accounts
+//   - per username    (20) - stops guessing one account from many IPs. This one matters
+//     because the IP can be unreliable behind a proxy (X-Forwarded-For is client
+//     supplied), so the IP limit alone can be sidestepped.
+const MAX_ATTEMPTS_PER_IP = 5;
+const MAX_ATTEMPTS_PER_USERNAME = 20;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_TRACKED_KEYS = 10_000;
 
 interface AttemptRecord { count: number; firstAttempt: number }
 const attempts = new Map<string, AttemptRecord>();
 
-function loginRateLimit(req: Request, res: Response, next: NextFunction) {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const record = attempts.get(ip);
+const ipKey = (req: Request) => `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+const userKey = (username: string) => `user:${username.toLowerCase()}`;
 
-  if (record) {
-    // Expired window — reset
-    if (Date.now() - record.firstAttempt > WINDOW_MS) {
-      attempts.delete(ip);
-    } else if (record.count >= MAX_ATTEMPTS) {
-      const retryAfter = Math.ceil((WINDOW_MS - (Date.now() - record.firstAttempt)) / 1000);
-      res.setHeader('Retry-After', String(retryAfter));
-      return res.status(429).json({ error: 'Too many login attempts. Try again later.' });
-    }
+/** Seconds until the key may try again, or 0 if it is not blocked. */
+function blockedFor(key: string, max: number): number {
+  const record = attempts.get(key);
+  if (!record) return 0;
+  const age = Date.now() - record.firstAttempt;
+  if (age > WINDOW_MS) {
+    attempts.delete(key);
+    return 0;
   }
-  next();
+  return record.count >= max ? Math.ceil((WINDOW_MS - age) / 1000) : 0;
 }
 
-function recordFailedAttempt(ip: string) {
-  const record = attempts.get(ip);
+function recordFailedAttempt(key: string) {
+  const record = attempts.get(key);
   if (!record || Date.now() - record.firstAttempt > WINDOW_MS) {
-    attempts.set(ip, { count: 1, firstAttempt: Date.now() });
+    // Keep the map bounded: drop expired entries, then the oldest if still full
+    if (attempts.size >= MAX_TRACKED_KEYS) {
+      const now = Date.now();
+      for (const [k, r] of attempts) {
+        if (now - r.firstAttempt > WINDOW_MS) attempts.delete(k);
+      }
+      if (attempts.size >= MAX_TRACKED_KEYS) {
+        attempts.delete(attempts.keys().next().value as string);
+      }
+    }
+    attempts.set(key, { count: 1, firstAttempt: Date.now() });
   } else {
     record.count++;
   }
 }
 
-function clearAttempts(ip: string) {
-  attempts.delete(ip);
+function tooManyAttempts(res: Response, retryAfter: number) {
+  res.setHeader('Retry-After', String(retryAfter));
+  return res.status(429).json({ error: 'Too many login attempts. Try again later.' });
+}
+
+function loginRateLimit(req: Request, res: Response, next: NextFunction) {
+  const retryAfter = blockedFor(ipKey(req), MAX_ATTEMPTS_PER_IP);
+  if (retryAfter > 0) return tooManyAttempts(res, retryAfter);
+  next();
+}
+
+/** Test helper: forget recorded failures (all of them, or only the per-IP ones). */
+export function resetLoginRateLimit(only?: 'ip') {
+  if (!only) return attempts.clear();
+  for (const key of attempts.keys()) {
+    if (key.startsWith('ip:')) attempts.delete(key);
+  }
 }
 // --- End rate limiter ---
 
-router.post('/login', loginRateLimit, asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) throw new ValidationError('Username and password are required');
-
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const user = await prisma.user.findUnique({ where: { username } });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-    recordFailedAttempt(ip);
-    throw new AuthenticationError('Invalid username or password');
+function readCredentials(body: unknown): { username: string; password: string } {
+  const { username, password } = (body ?? {}) as Record<string, unknown>;
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+    throw new ValidationError('Username and password are required');
   }
+  if (username.length > 100 || password.length > 200) {
+    throw new ValidationError('Username or password is too long');
+  }
+  return { username, password };
+}
 
-  clearAttempts(ip);
+// Compared against when the username doesn't exist, so a wrong username takes as long
+// as a wrong password and response time doesn't reveal which usernames are real.
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 
+async function startSession(req: Request, user: { id: number; username: string; role: Role; passwordHash: string }) {
   // Prevent session fixation: rotate the session ID on successful login.
   await new Promise<void>((resolve, reject) => {
     req.session.regenerate((err) => (err ? reject(err) : resolve()));
   });
   req.session.user = { id: user.id, username: user.username, role: user.role };
+  req.session.passwordVersion = passwordVersion(user.passwordHash);
+  if (user.role === 'VIEWER') {
+    // Lobby screens stay signed in (see the keep-alive middleware in app.ts)
+    req.session.cookie.maxAge = SESSION_AGES.VIEWER_MS;
+    req.session.lastRefreshAt = Date.now();
+  }
   rotateCsrfToken(req);
   await new Promise<void>((resolve, reject) => {
     req.session.save((err) => (err ? reject(err) : resolve()));
   });
+}
+
+router.post('/login', loginRateLimit, asyncHandler(async (req, res) => {
+  const { username, password } = readCredentials(req.body);
+
+  const retryAfter = blockedFor(userKey(username), MAX_ATTEMPTS_PER_USERNAME);
+  if (retryAfter > 0) {
+    tooManyAttempts(res, retryAfter);
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { username } });
+  const passwordOk = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !passwordOk) {
+    recordFailedAttempt(ipKey(req));
+    recordFailedAttempt(userKey(username));
+    throw new AuthenticationError('Invalid username or password');
+  }
+
+  attempts.delete(ipKey(req));
+  attempts.delete(userKey(username));
+
+  await startSession(req, user);
   res.json({ id: user.id, username: user.username, role: user.role });
 }));
 
@@ -103,9 +168,10 @@ router.post('/setup', asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Setup already completed' });
   }
 
-  const { username, password } = req.body;
-  if (!username || !password) throw new ValidationError('Username and password are required');
-  if (password.length < 8) throw new ValidationError('Password must be at least 8 characters');
+  const { username, password } = readCredentials(req.body);
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new ValidationError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
@@ -113,14 +179,7 @@ router.post('/setup', asyncHandler(async (req, res) => {
   });
 
   // Auto-login after setup
-  await new Promise<void>((resolve, reject) => {
-    req.session.regenerate((err) => (err ? reject(err) : resolve()));
-  });
-  req.session.user = { id: user.id, username: user.username, role: user.role };
-  rotateCsrfToken(req);
-  await new Promise<void>((resolve, reject) => {
-    req.session.save((err) => (err ? reject(err) : resolve()));
-  });
+  await startSession(req, user);
   res.json({ id: user.id, username: user.username, role: user.role });
 }));
 

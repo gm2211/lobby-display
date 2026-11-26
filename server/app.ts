@@ -5,6 +5,7 @@ import multer, { MulterError } from 'multer';
 import morgan from 'morgan';
 import session from 'express-session';
 import fs from 'fs';
+import crypto from 'crypto';
 
 import servicesRouter from './routes/services.js';
 import eventsRouter from './routes/events.js';
@@ -20,6 +21,9 @@ import { csrfMiddleware } from './middleware/csrf.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requireAuth, requireMinRole, ROLE_LEVEL, AuthenticationError, AuthorizationError } from './middleware/auth.js';
 import { PrismaSessionStore } from './utils/sessionStore.js';
+import { syncSessionUser } from './middleware/sessionUser.js';
+import { NotFoundError } from './middleware/errorHandler.js';
+import { SESSION_AGES } from './constants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,11 +33,21 @@ fs.mkdirSync(uploadDir, { recursive: true });
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
+// The stored extension comes from the validated MIME type, never from the uploaded
+// filename: express.static picks the Content-Type from the extension, so a file named
+// "x.html" with PNG magic bytes would otherwise be served as a web page.
+const EXTENSION_BY_MIME: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+};
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+    const ext = EXTENSION_BY_MIME[file.mimetype] ?? '';
+    cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
   },
 });
 const upload = multer({
@@ -50,12 +64,24 @@ const upload = multer({
 
 const app = express();
 
-app.use(express.json());
-
 const isProd = process.env.NODE_ENV === 'production';
-const DAY_MS = 24 * 60 * 60 * 1000;
-const SESSION_MAX_AGE_MS = 7 * DAY_MS;
-const SESSION_REFRESH_THRESHOLD_MS = 4 * DAY_MS;
+const { DAY_MS, DEFAULT_MS: SESSION_MAX_AGE_MS, REFRESH_THRESHOLD_MS: SESSION_REFRESH_THRESHOLD_MS, VIEWER_MS: VIEWER_MAX_AGE_MS } = SESSION_AGES;
+
+app.disable('x-powered-by');
+
+// Baseline security headers for every response
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // The admin history view iframes the dashboard from the same origin
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  if (isProd) {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+  }
+  next();
+});
+
+app.use(express.json());
 
 const rawSecrets = process.env.COOKIE_SECRETS;
 const fallbackSecret = process.env.COOKIE_SECRET;
@@ -81,13 +107,20 @@ app.use(session({
   },
 }));
 
-const VIEWER_MAX_AGE_MS = 365 * DAY_MS; // 1 year for lobby screens
+// Drop sessions of deleted users / changed passwords, pick up role changes
+app.use(syncSessionUser);
 
 app.use((req, _res, next) => {
   if (!req.session?.user) return next();
-  // VIEWER sessions get indefinite keep-alive (1 year, refreshed on every request)
+  // VIEWER sessions (lobby screens) are kept alive for a year.
+  // express-session only re-sends the cookie when the session DATA changes (changing
+  // cookie.maxAge alone is not enough), so stamp lastRefreshAt once a day. Without
+  // that the browser keeps the expiry it got at login and the screen is logged out.
   if (req.session.user.role === 'VIEWER') {
     req.session.cookie.maxAge = VIEWER_MAX_AGE_MS;
+    if (Date.now() - (req.session.lastRefreshAt ?? 0) > DAY_MS) {
+      req.session.lastRefreshAt = Date.now();
+    }
     return next();
   }
   const expires = req.session.cookie?.expires;
@@ -181,6 +214,11 @@ app.use('/api/snapshots', snapshotsProtect, snapshotsRouter);
 // Messages: all routes require authentication (any role)
 app.use('/api/messages', requireAuth, messagesRouter);
 
+// Uploaded images. They are written to public/images/uploads at runtime, which is not
+// part of the Vite build output (dist/), so they need their own static route.
+// Public like the rest of /images (the login page and lobby screens load them).
+app.use('/images/uploads', express.static(uploadDir, { index: false, dotfiles: 'deny', fallthrough: false }));
+
 // Magic bytes for allowed image types
 const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
   'image/png': [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47] }],
@@ -232,6 +270,9 @@ app.post('/api/upload', requireMinRole('EDITOR' as const), (req: Request, res: R
     res.json({ url: `/images/uploads/${req.file.filename}` });
   });
 });
+
+// Unknown API routes get a JSON 404 instead of falling through to the SPA page
+app.use('/api', (_req, _res, next) => next(new NotFoundError('API route not found')));
 
 // Global error handler - MUST be after all routes
 app.use(errorHandler);
