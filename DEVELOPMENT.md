@@ -18,7 +18,7 @@ Reference guide for common patterns in this codebase. **Read this when implement
     */
    interface Props {
      items: NewEntity[];
-     onSave: () => Promise<void>;
+     onSave: (optimistic?: { items?: NewEntity[] }) => void;
      hasChanged: boolean;
    }
 
@@ -29,6 +29,26 @@ Reference guide for common patterns in this codebase. **Read this when implement
 
 2. Export from `src/components/admin/sections/index.ts`
 3. Add to `src/pages/Admin.tsx`
+
+### Optimistic writes (keep the admin snappy)
+
+For edits whose result you can predict (delete, undo, status, notes, settings), fire the
+write **without awaiting it** and pass the expected state to `onSave`:
+
+```typescript
+const remove = (id: number) => {
+  api.del(`/api/things/${id}`);                       // fire-and-forget
+  onSave({ items: items.map(i => i.id === id ? { ...i, markedForDeletion: true } : i) });
+};
+```
+
+`Admin.tsx` renders the optimistic state at once and resyncs from `/api/snapshots/draft-status`
+only after **every** in-flight write has landed (`mutations.whenIdle()` in `src/utils/api.ts`).
+Any `draft-status` response that started before a write did is dropped (`mutations.epoch`), so a
+slow server (Render free tier) can't revert the UI. A failed write shows a red toast and resyncs,
+which rolls the change back. Never resync on a fixed timer: a 500ms `setTimeout` used to race the
+write and made deletes flip back on staging. Only creates (server picks the ID) should `await`
+then call `onSave()` with no args.
 
 ## Adding an API Route
 

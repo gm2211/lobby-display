@@ -102,7 +102,63 @@ function toHeaderRecord(headers?: HeadersInit): Record<string, string> {
   return headers;
 }
 
-async function requestWithCsrf<T>(
+// ============================================================================
+// MUTATION TRACKING
+// ============================================================================
+// Admin sections fire writes without awaiting them (optimistic UI). To refetch
+// only once those writes have landed -- and to ignore GETs that raced ahead of
+// them -- every mutation is counted here. `epoch` bumps when a write starts, so
+// a GET that began before the bump may hold stale data and should be dropped.
+
+let pendingMutations = 0;
+let mutationEpoch = 0;
+let idleWaiters: Array<() => void> = [];
+const mutationErrorListeners = new Set<(err: unknown) => void>();
+
+function trackMutation<T>(promise: Promise<T>): Promise<T> {
+  pendingMutations++;
+  mutationEpoch++;
+  promise
+    .catch(err => {
+      mutationErrorListeners.forEach(listener => listener(err));
+    })
+    .finally(() => {
+      pendingMutations--;
+      if (pendingMutations === 0) {
+        const waiters = idleWaiters;
+        idleWaiters = [];
+        waiters.forEach(resolve => resolve());
+      }
+    });
+  return promise;
+}
+
+export const mutations = {
+  /** Number of writes still in flight. */
+  get pending(): number { return pendingMutations; },
+  /** Increments every time a write starts. */
+  get epoch(): number { return mutationEpoch; },
+  /** Resolves once no writes are in flight (immediately if none are). */
+  whenIdle(): Promise<void> {
+    if (pendingMutations === 0) return Promise.resolve();
+    return new Promise(resolve => idleWaiters.push(resolve));
+  },
+  /** Subscribe to failed writes. Returns an unsubscribe function. */
+  onError(listener: (err: unknown) => void): () => void {
+    mutationErrorListeners.add(listener);
+    return () => { mutationErrorListeners.delete(listener); };
+  },
+};
+
+function requestWithCsrf<T>(
+  url: string,
+  init: RequestInit,
+  headers: Record<string, string> = {}
+): Promise<T> {
+  return trackMutation(requestWithCsrfUntracked<T>(url, init, headers));
+}
+
+async function requestWithCsrfUntracked<T>(
   url: string,
   init: RequestInit,
   headers: Record<string, string> = {}
@@ -175,6 +231,9 @@ export const api = {
     const mergedHeaders = { ...toHeaderRecord(init.headers), ...headers };
     return requestWithCsrf<T>(url, { ...init, headers: undefined }, mergedHeaders);
   },
+
+  /** Fetch the CSRF token ahead of the first write, saving a round trip then. */
+  prefetchCsrf: (): Promise<string | void> => fetchCsrfToken().catch(() => {}),
 
   refreshCsrf: async (): Promise<string> => {
     csrfToken = null;
